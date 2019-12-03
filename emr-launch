@@ -58,9 +58,6 @@ while getopts 'u:bf:vr:l:k:n:d:p:t' flag; do
      [-t] if set, setup theia IDE on master node port 3000\n' $0; exit 2 ;;
   esac
 done
-export AWS_DEFAULT_REGION="${region}"
-
-
 
 declare -a arr_name=('-p' '-k')
 declare -a arr=("$pid" "$key")
