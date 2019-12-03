@@ -12,14 +12,21 @@ cleanup() {
 update_script_bucket(){
     n=0
     retrytime=3
-    until [ aws2 s3api head-bucket --bucket "$s3_bucket_scripts" 2>/dev/null ] || [ $n -ge $retrytime ]; do
+    until aws2 s3api head-bucket --bucket "$s3_bucket_scripts" 2>/dev/null; do
+        if [ $n -ge $retrytime ]; then
+            break
+        fi
+        ((++n))
         echo "Bucket not up, retrying ..."
         sleep 20
     done
 
-    if [$n -le $retrytime ]; then
+    if [ $n -le $retrytime ]; then
         aws2 s3api put-bucket-versioning --bucket "${s3_bucket_scripts}" --versioning-configuration Status=Enabled
         aws2 s3 sync "s3://dsc102-pa2" "s3://${s3_bucket_scripts_folder}"
+    else
+        echo "Bucket not up, retry timeout"
+        exit 1
     fi
 }
 
@@ -74,11 +81,12 @@ else
     echo "argument error"
 fi
 
-if [ "$dev" = "dev"]; then
+if [ "$dev" = "dev" ]; then
     instance_type="m4.large"
     spot='true'
 else
     instance_type="m5.xlarge"
+fi
 
 if [ -n "$spot" ]; then
     instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type"
@@ -116,6 +124,10 @@ until [ "$state" = "WAITING" ]; do
     fi
     sleep 20
 done
+
+if [ "$state" = "WAITING" ]; then
+    echo "Cluster is up"
+fi
 
 
 # --steps Type=CUSTOM_JAR,Name=CustomJAR,ActionOnFailure=CONTINUE,Jar=s3://"${region}".elasticmapreduce/libs/script-runner/script-runner.jar,Args=["s3://YOUR_BUCKET/YOUR_SHELL_SCRIPT.sh"]

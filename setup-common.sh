@@ -56,7 +56,7 @@ if [ "$is_master" = "true" ]; then
         -o use_cache=/mnt/s3fs-cache \
         -o no_check_certificate \
         -o enable_noobj_cache \
-        -o url="https://s3-${REGION}.amazonaws.com"
+        -o url="https://s3-${REGION}.amazonaws.com" \
         $BUCKET \
         /mnt/$BUCKET
     # jupyter configs
