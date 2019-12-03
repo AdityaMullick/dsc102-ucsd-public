@@ -37,12 +37,12 @@ spot=''
 region='us-west-2'
 label='emr-5.28.0'
 num_worker=4
-
+bootstrap_path='s3://dsc102-pa2-public/bootstrap-scripts/setup-common.sh'
 print_usage() {
   printf "Not written yet"
 }
 
-while getopts 'u:bf:vr:l:k:n:d:' flag; do
+while getopts 'u:bf:vr:l:k:n:d:p:' flag; do
   case "${flag}" in
     u) pid="${OPTARG}" ;;
     b) spot='true' ;;
@@ -51,6 +51,7 @@ while getopts 'u:bf:vr:l:k:n:d:' flag; do
     k) key="${OPTARG}" ;;
     n) num_worker=${OPTARG} ;;
     d) dev="${OPTARG}" ;;
+    p) bootstrap_path="${OPTARG}" ;;
     *) print_usage
        exit 1 ;;
   esac
@@ -102,7 +103,7 @@ ret=$(aws2 emr create-cluster \
 --applications Name=Spark Name=Hadoop \
 --name="$emr_cluster" \
 --log-uri s3://"${s3_bucket_logs}" \
---bootstrap-actions Path="s3://dsc102-scripts/setup-common.sh",Args=["${pid}","s3://${s3_bucket_scripts_folder}","${region}"] \
+--bootstrap-actions Path="$bootstrap_path",Args=["${pid}","s3://${s3_bucket_scripts_folder}","${region}"] \
 --configurations '[{"Classification":"spark","Properties":{"maximizeResourceAllocation":"true","spark.dynamicAllocation.enabled":"false"}}]'
 ) &&
 cluster_id=$(echo $ret | jq -r '.ClusterId')
