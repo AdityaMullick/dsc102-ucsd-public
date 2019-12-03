@@ -37,6 +37,7 @@ spot=''
 region='us-west-2'
 label='emr-5.28.0'
 num_worker=4
+deploy='false'
 bootstrap_path='s3://dsc102-pa2-public/bootstrap-scripts/setup-common.sh'
 print_usage() {
   printf "Not written yet"
@@ -50,7 +51,7 @@ while getopts 'u:bf:vr:l:k:n:d:p:' flag; do
     l) label="${OPTARG}" ;;
     k) key="${OPTARG}" ;;
     n) num_worker=${OPTARG} ;;
-    d) dev="${OPTARG}" ;;
+    d) deploy='true' ;;
     p) bootstrap_path="${OPTARG}" ;;
     *) print_usage
        exit 1 ;;
@@ -82,14 +83,14 @@ else
     echo "argument error"
 fi
 
-if [ "$dev" = "dev" ]; then
+if [ "$deploy" -e "false" ]; then
     instance_type="m4.large"
     spot='true'
 else
     instance_type="m5.xlarge"
 fi
 
-if [ -n "$spot" ]; then
+if [ "$spot" -ne 'true' ]; then
     instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type"
 else
     instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type,BidPrice=OnDemandPrice"

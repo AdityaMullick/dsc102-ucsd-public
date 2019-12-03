@@ -61,7 +61,7 @@ if [ "$is_master" = "true" ]; then
         /mnt/$BUCKET
     # jupyter configs
     mkdir -p ~/.jupyter
-    touch ls ~/.jupyter/jupyter_notebook_config.py
+    touch ~/.jupyter/jupyter_notebook_config.py
     HASHED_PASSWORD=$(python3.6 -c "from notebook.auth import passwd; print(passwd('$JUPYTER_PASSWORD'))")
     echo "c.NotebookApp.password = u'$HASHED_PASSWORD'" >> ~/.jupyter/jupyter_notebook_config.py
     echo "c.NotebookApp.open_browser = False" >> ~/.jupyter/jupyter_notebook_config.py
