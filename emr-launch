@@ -1,4 +1,5 @@
 #!/bin/bash
+source credentials.sh
 set -e
 cleanup() {
     if [ -n "$cluster_id" ]; then 
@@ -33,17 +34,18 @@ update_script_bucket(){
 cluster_id=''
 trap cleanup INT
 
-spot=''
+spot='false'
 region='us-west-2'
 label='emr-5.28.0'
 num_worker=4
 deploy='false'
+theia='false'
 bootstrap_path='s3://dsc102-pa2-public/bootstrap-scripts/setup-common.sh'
 print_usage() {
   printf "Not written yet"
 }
 
-while getopts 'u:bf:vr:l:k:n:d:p:' flag; do
+while getopts 'u:bf:vr:l:k:n:d:p:c:' flag; do
   case "${flag}" in
     u) pid="${OPTARG}" ;;
     b) spot='true' ;;
@@ -53,10 +55,25 @@ while getopts 'u:bf:vr:l:k:n:d:p:' flag; do
     n) num_worker=${OPTARG} ;;
     d) deploy='true' ;;
     p) bootstrap_path="${OPTARG}" ;;
-    *) print_usage
-       exit 1 ;;
+    c) credentials="${OPTARG}" ;;
+    t) theia='true' ;;
+    ?) printf '\nUsage: %s: [-u] your pid [-b] spot flag\n' $0; exit 2 ;;
   esac
 done
+export AWS_DEFAULT_REGION="${region}"
+
+
+
+declare -a arr_name=('-p' '-k')
+declare -a arr=("$pid" "$key")
+
+for ((i=0;i<${#arr[@]};++i)); do
+    if [ -z "${arr[i]}" ]; then
+        echo "Error: argument ${arr_name} is required."
+        exit 1
+    fi
+done
+
 
 s3_bucket_logs=${pid}-emr-logs
 s3_bucket_scripts=${pid}-pa2
@@ -80,31 +97,33 @@ if [[ -n "$pid" ]]; then
 
     fi
 else
-    echo "argument error"
+    echo "argument error: pid"
+    exit 1
 fi
 
-if [ "$deploy" -e "false" ]; then
-    instance_type="m4.large"
-    spot='true'
-else
+if [ "$deploy" = 'true' ]; then
+
     instance_type="m5.xlarge"
+else
+    instance_type="m4.large"
+    spot='true'    
 fi
 
-if [ "$spot" -ne 'true' ]; then
-    instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type"
-else
+if [ "$spot" = 'true' ]; then
     instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type,BidPrice=OnDemandPrice"
+else
+    instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type"    
 fi
 
 ret=$(aws2 emr create-cluster \
 --release-label "${label}" \
 --instance-groups InstanceGroupType=MASTER,InstanceCount=1,InstanceType=$instance_type InstanceGroupType=CORE,"$instance_group_core" \
 --use-default-roles \
---ec2-attributes KeyName="${key}",SubnetId="subnet-5ea74226"  \
+--ec2-attributes KeyName="${key}"  \
 --applications Name=Spark Name=Hadoop \
 --name="$emr_cluster" \
 --log-uri s3://"${s3_bucket_logs}" \
---bootstrap-actions Path="$bootstrap_path",Args=["${pid}","s3://${s3_bucket_scripts_folder}","${region}"] \
+--bootstrap-actions Path="$bootstrap_path",Args=["${pid}","s3://${s3_bucket_scripts_folder}","${region}","${theia}"] \
 --configurations '[{"Classification":"spark","Properties":{"maximizeResourceAllocation":"true","spark.dynamicAllocation.enabled":"false"}}]'
 ) &&
 cluster_id=$(echo $ret | jq -r '.ClusterId')
@@ -115,6 +134,8 @@ if [  -z "$cluster_id" ]; then
 fi
 # 
 echo "Cluster starting ... cluster ID: ${cluster_id}"
+
+
 sleep 20
 state=''
 until [ "$state" = "WAITING" ]; do
@@ -131,5 +152,9 @@ if [ "$state" = "WAITING" ]; then
     echo "Cluster is up"
 fi
 
+ret=$(aws2 emr describe-cluster --cluster-id "${cluster_id}")
+dns_name=$(echo $ret | jq -r '.Cluster.MasterPublicDnsName')
+echo "Cluster specs: region: ${region}, instance type: ${instance_type}, worker number: ${num_worker}, spot option: ${spot}"
+echo "Master public DNS name: ${dns_name}, user name: hadoop"
 
 # --steps Type=CUSTOM_JAR,Name=CustomJAR,ActionOnFailure=CONTINUE,Jar=s3://"${region}".elasticmapreduce/libs/script-runner/script-runner.jar,Args=["s3://YOUR_BUCKET/YOUR_SHELL_SCRIPT.sh"]

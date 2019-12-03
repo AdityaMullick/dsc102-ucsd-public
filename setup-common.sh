@@ -3,12 +3,13 @@ set -e
 JUPYTER_PASSWORD=${1:-"root"}
 NOTEBOOK_DIR=${2:-"s3://YourBucketForNotebookCheckpoints/yourNotebooksFolder/"}
 REGION=${3:-"us-west-2"}
+THEIA=${4:-"false"}
 # ---------------------------- common ------------------------------------
 
 # mount home to /mnt
 if [ ! -d /mnt/home ]; then
-  	  sudo mv /home/ /mnt/
-  	  sudo ln -s /mnt/home /home
+      sudo mv /home/ /mnt/
+      sudo ln -s /mnt/home /home
 fi
 sudo yum update -y
 sudo yum install -y htop git ;
@@ -21,6 +22,7 @@ sudo /usr/local/bin/jupyter nbextension enable collapsible_headings/main;
 
 echo 'export PYSPARK_PYTHON="/usr/bin/python3.6"' >> $HOME/.bashrc && source $HOME/.bashrc
 echo 'export SPARK_HOME="/usr/lib/spark"' >> $HOME/.bashrc && source $HOME/.bashrc
+
 # -----------------------------------------------------------------------------
 
 # ---------------------------- master only ------------------------------------
@@ -28,12 +30,12 @@ is_master='false'
 is_master=$(jq -r '.isMaster' "/mnt/var/lib/info/instance.json")
 
 if [ "$is_master" = "true" ]; then 
-	sudo yum install automake fuse fuse-devel gcc-c++ libcurl-devel libxml2-devel make openssl-devel -y
+    sudo yum install automake fuse fuse-devel gcc-c++ libcurl-devel libxml2-devel make openssl-devel -y
 
     # extract BUCKET and FOLDER to mount from NOTEBOOK_DIR
-	NOTEBOOK_DIR="${NOTEBOOK_DIR%/}/"
-	BUCKET=$(python3.6 -c "print('$NOTEBOOK_DIR'.split('//')[1].split('/')[0])")
-	FOLDER=$(python3.6 -c "print('/'.join('$NOTEBOOK_DIR'.split('//')[1].split('/')[1:-1]))")
+    NOTEBOOK_DIR="${NOTEBOOK_DIR%/}/"
+    BUCKET=$(python3.6 -c "print('$NOTEBOOK_DIR'.split('//')[1].split('/')[0])")
+    FOLDER=$(python3.6 -c "print('/'.join('$NOTEBOOK_DIR'.split('//')[1].split('/')[1:-1]))")
 
     # install s3fs
     cd /mnt
@@ -95,12 +97,40 @@ BASH_SCRIPT
 end script
 EOF
   
-      sudo mv /home/hadoop/jupyter.conf /etc/init/
-      sudo chown root:root /etc/init/jupyter.conf
-      sudo initctl reload-configuration
-      # start jupyter daemon
-      echo "Starting Jupyter Daemon"
-      sudo initctl start jupyter
+    sudo mv ~/jupyter.conf /etc/init/
+    sudo chown root:root /etc/init/jupyter.conf
+    sudo initctl reload-configuration
+    # start jupyter daemon
+    echo "Starting Jupyter Daemon"
+    sudo initctl start jupyter
+    if [ "${THEIA}" = 'true' ]; then
+        echo "Creating Theia Daemon"
+        sudo yum -y install docker
+        sudo service docker start
+        sudo cat <<EOF > ~/theia.conf
+description "Theia"
+
+start on runlevel [2345]
+stop on runlevel [016]
+
+respawn
+respawn limit 0 10
+
+script
+sudo su - hadoop > /var/log/theia.log 2>&1 <<BASH_SCRIPT
+      sudo docker run -it --init -p 3000:3000 -v "/mnt:/home/project:cached" theiaide/theia-python:next
+BASH_SCRIPT
+
+end script
+EOF
+      
+        sudo mv ~/theia.conf /etc/init/
+        sudo chown root:root /etc/init/theia.conf
+        sudo initctl reload-configuration
+        # start theia daemon
+        echo "Starting Theia Daemon"
+        sudo initctl start theia
+    fi
 
 fi
 
