@@ -1,6 +1,6 @@
 #!/bin/bash
-source credentials.sh
 set -e
+trap cleanup INT
 cleanup() {
     if [ -n "$cluster_id" ]; then 
         echo "Terminating ... cluster ID: ${cluster_id}"; 
@@ -32,8 +32,6 @@ update_script_bucket(){
 }
 
 cluster_id=''
-trap cleanup INT
-
 spot='false'
 region='us-west-2'
 label='emr-5.28.0'
@@ -41,11 +39,9 @@ num_worker=4
 deploy='false'
 theia='false'
 bootstrap_path='s3://dsc102-pa2-public/bootstrap-scripts/setup-common.sh'
-print_usage() {
-  printf "Not written yet"
-}
 
-while getopts 'u:bf:vr:l:k:n:d:p:c:' flag; do
+
+while getopts 'u:bf:vr:l:k:n:d:p:t' flag; do
   case "${flag}" in
     u) pid="${OPTARG}" ;;
     b) spot='true' ;;
@@ -55,9 +51,11 @@ while getopts 'u:bf:vr:l:k:n:d:p:c:' flag; do
     n) num_worker=${OPTARG} ;;
     d) deploy='true' ;;
     p) bootstrap_path="${OPTARG}" ;;
-    c) credentials="${OPTARG}" ;;
     t) theia='true' ;;
-    ?) printf '\nUsage: %s: [-u] your pid [-b] spot flag\n' $0; exit 2 ;;
+    ?) printf '\nUsage: %s: [-u:] your pid [-b] if set, use spot [-r:] region [-l:] EMR label
+     [-k:] key name [-n:] number of workers [-d] if set, use deployment env
+     [-p:] bootstrap script path 
+     [-t] if set, setup theia IDE on master node port 3000\n' $0; exit 2 ;;
   esac
 done
 export AWS_DEFAULT_REGION="${region}"
