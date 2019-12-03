@@ -1,4 +1,4 @@
-name: Upload Website
+name: Upload S3
 
 on:
   push:
@@ -19,3 +19,4 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_REGION: 'us-west-2'   # optional: defaults to us-east-1
         DEST_DIR: 'bootstrap-scripts'
+
