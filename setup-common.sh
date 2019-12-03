@@ -2,7 +2,7 @@
 set -e
 JUPYTER_PASSWORD=${1:-"root"}
 NOTEBOOK_DIR=${2:-"s3://YourBucketForNotebookCheckpoints/yourNotebooksFolder/"}
-
+REGION=${3:-"us-west-2"}
 # ---------------------------- common ------------------------------------
 
 # mount home to /mnt
@@ -12,13 +12,15 @@ if [ ! -d /mnt/home ]; then
 fi
 sudo yum update -y
 sudo yum install -y htop git ;
-sudo pip-3.6 install paramiko nltk scipy scikit-learn pandas matplotlib gensim pyspark==2.4.4 jupyter jupyter_contrib_nbextensions jupyter_nbextensions_configurator findspark;
+sudo pip-3.6 install paramiko nltk scipy scikit-learn pandas matplotlib gensim pyspark==2.4.4 jupyter jupyter_contrib_nbextensions jupyter_nbextensions_configurator;
 sudo /usr/local/bin/jupyter contrib nbextension install --system ;
 sudo /usr/local/bin/jupyter nbextensions_configurator enable --system ;
 sudo /usr/local/bin/jupyter nbextension enable code_prettify/code_prettify;
 sudo /usr/local/bin/jupyter nbextension enable execute_time/ExecuteTime;
 sudo /usr/local/bin/jupyter nbextension enable collapsible_headings/main;
-export PYSPARK_PYTHON="/usr/bin/python3.6"
+
+echo '\nexport PYSPARK_PYTHON="/usr/bin/python3.6"' >> $HOME/.bashrc && source $HOME/.bashrc
+echo '\nexport SPARK_HOME="/usr/lib/spark"' >> $HOME/.bashrc && source $HOME/.bashrc
 # -----------------------------------------------------------------------------
 
 # ---------------------------- master only ------------------------------------
@@ -34,7 +36,6 @@ if [ "$is_master" = "true" ]; then
 	FOLDER=$(python3.6 -c "print('/'.join('$NOTEBOOK_DIR'.split('//')[1].split('/')[1:-1]))")
 
     # install s3fs
-    sudo sed -i 's/enabled=0/enabled=1/' /etc/yum.repos.d/epel.repo
     cd /mnt
     git clone https://github.com/s3fs-fuse/s3fs-fuse.git
     cd s3fs-fuse/
@@ -55,6 +56,7 @@ if [ "$is_master" = "true" ]; then
         -o use_cache=/mnt/s3fs-cache \
         -o no_check_certificate \
         -o enable_noobj_cache \
+        -o url="https://s3-${REGION}.amazonaws.com"
         $BUCKET \
         /mnt/$BUCKET
     # jupyter configs

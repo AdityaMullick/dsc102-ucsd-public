@@ -10,14 +10,23 @@ cleanup() {
 }
 
 update_script_bucket(){
-    aws2 s3api put-bucket-versioning --bucket "${s3_bucket_scripts}" --versioning-configuration Status=Enabled &&
-    aws2 s3 sync "s3://dsc102-pa2" "s3://${s3_bucket_scripts_folder}"
+    n=0
+    retrytime=3
+    until [ aws2 s3api head-bucket --bucket "$s3_bucket_scripts" 2>/dev/null ] || [ $n -ge $retrytime ]; do
+        echo "Bucket not up, retrying ..."
+        sleep 20
+    done
+
+    if [$n -le $retrytime ]; then
+        aws2 s3api put-bucket-versioning --bucket "${s3_bucket_scripts}" --versioning-configuration Status=Enabled
+        aws2 s3 sync "s3://dsc102-pa2" "s3://${s3_bucket_scripts_folder}"
+    fi
 }
 
 cluster_id=''
 trap cleanup INT
 
-bid=''
+spot=''
 region='us-west-2'
 label='emr-5.28.0'
 num_worker=4
@@ -26,24 +35,25 @@ print_usage() {
   printf "Not written yet"
 }
 
-while getopts 'u:bf:vr:l:k:n:' flag; do
+while getopts 'u:bf:vr:l:k:n:d:' flag; do
   case "${flag}" in
-    u) user="${OPTARG}" ;;
-    b) bid='true' ;;
+    u) pid="${OPTARG}" ;;
+    b) spot='true' ;;
     r) region="${OPTARG}" ;;
     l) label="${OPTARG}" ;;
     k) key="${OPTARG}" ;;
     n) num_worker=${OPTARG} ;;
+    d) dev="${OPTARG}" ;;
     *) print_usage
        exit 1 ;;
   esac
 done
 
-s3_bucket_logs=${user}-emr-logs
-s3_bucket_scripts=${user}-pa2
+s3_bucket_logs=${pid}-emr-logs
+s3_bucket_scripts=${pid}-pa2
 s3_bucket_scripts_folder=${s3_bucket_scripts}/src
-emr_cluster=${user}-emr-cluster
-if [[ -n "$user" ]]; then
+emr_cluster=${pid}-emr-cluster
+if [[ -n "$pid" ]]; then
     if aws2 s3api head-bucket --bucket "$s3_bucket_logs" 2>/dev/null; then
         echo "emr logs bucket already exists, skipping"
     else
@@ -56,10 +66,6 @@ if [[ -n "$user" ]]; then
     else
         echo "creating emr scripts bucket"
         aws2 s3api create-bucket --acl private --bucket "${s3_bucket_scripts}" --region "${region}" --create-bucket-configuration LocationConstraint="${region}" &&
-        until [ aws2 s3api head-bucket --bucket "$s3_bucket_scripts" 2>/dev/null ]; do
-            echo "waiting for bucket setting up"
-            sleep 20
-        done
         echo "copying pa2 scripts ..."
         update_script_bucket
 
@@ -68,22 +74,27 @@ else
     echo "argument error"
 fi
 
-
-if [ -n "$bid" ]; then
-    instance_group_core="InstanceCount=$num_worker,InstanceType=m5.xlarge"
+if [ "$dev" = "dev"]; then
+    instance_type="m4.large"
+    spot='true'
 else
-    instance_group_core="InstanceCount=$num_worker,InstanceType=m5.xlarge,BidPrice=OnDemandPrice"
+    instance_type="m5.xlarge"
+
+if [ -n "$spot" ]; then
+    instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type"
+else
+    instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type,BidPrice=OnDemandPrice"
 fi
 
 ret=$(aws2 emr create-cluster \
 --release-label "${label}" \
---instance-groups InstanceGroupType=MASTER,InstanceCount=1,InstanceType=m5.xlarge InstanceGroupType=CORE,"$instance_group_core" \
+--instance-groups InstanceGroupType=MASTER,InstanceCount=1,InstanceType=$instance_type InstanceGroupType=CORE,"$instance_group_core" \
 --use-default-roles \
 --ec2-attributes KeyName="${key}",SubnetId="subnet-5ea74226"  \
---applications Name=JupyterHub Name=Spark Name=Hadoop Name=Livy Name=Hive \
+--applications Name=Spark Name=Hadoop \
 --name="$emr_cluster" \
 --log-uri s3://"${s3_bucket_logs}" \
---bootstrap-actions Path="s3://dsc102-scripts/setup-common.sh",Args=["${user}","s3://${s3_bucket_scripts_folder}"] \
+--bootstrap-actions Path="s3://dsc102-scripts/setup-common.sh",Args=["${pid}","s3://${s3_bucket_scripts_folder}","${region}"] \
 --configurations '[{"Classification":"spark","Properties":{"maximizeResourceAllocation":"true","spark.dynamicAllocation.enabled":"false"}}]'
 ) &&
 cluster_id=$(echo $ret | jq -r '.ClusterId')
