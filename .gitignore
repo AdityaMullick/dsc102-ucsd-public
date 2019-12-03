@@ -6,7 +6,7 @@ dataset/
 # C extensions
 *.so
 local.sh
-credentials.sh
+credentials.list
 # Distribution / packaging
 .Python
 build/
