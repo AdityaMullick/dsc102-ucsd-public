@@ -7,4 +7,4 @@ RUN curl "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip" -o 
 RUN unzip awscliv2.zip 
 RUN ./aws/install
 RUN rm -rvf aws awscliv2.zip
-COPY emr-launch.sh /usr/local/bin/emr-launch
+COPY emr-launch /usr/local/bin/emr-launch
