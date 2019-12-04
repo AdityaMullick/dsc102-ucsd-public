@@ -77,7 +77,7 @@ force='false'
 bootstrap_path='s3://dsc102-pa2-public/bootstrap-scripts/setup-common.sh'
 
 
-while getopts 'u:bfvr:l:k:n:d:p:t' flag; do
+while getopts 'u:bfvr:l:k:n:dp:t' flag; do
   case "${flag}" in
     u) pid="${OPTARG}" ;;
     b) spot='true' ;;
@@ -138,7 +138,7 @@ fi
 
 # -------------––-------------- spawning cluster ------------------------------
 
-id_list=list-clusters
+id_list=$(emr-list)
 if [ -n "${id_list}" ]; then
     echo "Warning: following cluster(s) is already running"
     echo "$id_list"

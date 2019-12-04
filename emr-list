@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 
-aws2 emr list-clusters --active | jq -r .Clusters[].Id
+aws2 emr list-clusters --active | jq -j '.Clusters[] | .Id, " ", .Status.State, "\n" '
