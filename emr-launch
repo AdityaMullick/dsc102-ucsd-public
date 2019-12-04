@@ -31,24 +31,23 @@ update_script_bucket(){
     fi
 }
 
-show_spinner()
-{
-  local -r pid="${1}"
-  local -r delay='0.75'
-  local spinstr='\|/-'
-  local temp
-  while ps a | awk '{print $1}' | grep -q "${pid}"; do
-    temp="${spinstr#?}"
-    printf " [%c]  " "${spinstr}"
-    spinstr=${temp}${spinstr%"${temp}"}
-    sleep "${delay}"
-    printf "\b\b\b\b\b\b"
-  done
-  printf "    \b\b\b\b"
-
+s3_block_public() {
+    aws2 s3api put-public-access-block --bucket $1 \
+        --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 }
 
+s3_check_exists() {
+    aws2 s3api head-bucket --bucket "${1}"
+}
 
+s3_create_bucket() {
+    aws2 s3api create-bucket --acl private \
+        --bucket "${1}" \
+        --region "${region}" \
+        --create-bucket-configuration LocationConstraint="${region}"
+}
+
+# -------------––-------------- parsing arguments -----------------------------
 cluster_id=''
 spot='false'
 region='us-west-2'
@@ -56,6 +55,7 @@ label='emr-5.28.0'
 num_worker=4
 deploy='false'
 theia='false'
+force='false'
 bootstrap_path='s3://dsc102-pa2-public/bootstrap-scripts/setup-common.sh'
 
 
@@ -70,10 +70,11 @@ while getopts 'u:bf:vr:l:k:n:d:p:t' flag; do
     d) deploy='true' ;;
     p) bootstrap_path="${OPTARG}" ;;
     t) theia='true' ;;
+    f) force='true' ;;
     ?) printf '\nUsage: %s: [-u:] your pid [-b] if set, use spot [-r:] region [-l:] EMR label
      [-k:] key name [-n:] number of workers [-d] if set, use deployment env
      [-p:] bootstrap script path 
-     [-t] if set, setup theia IDE on master node port 3000\n' $0; exit 2 ;;
+     [-t] if set, setup theia IDE on master node port 3000 [-f] if set, force start the second cluster\n' $0; exit 2 ;;
   esac
 done
 
@@ -86,25 +87,27 @@ for ((i=0;i<${#arr[@]};++i)); do
         exit 1
     fi
 done
+# -------------––--------------------------------------------------------------
 
-
+# -------------––-------------- setting up bucket -----------------------------
 s3_bucket_logs=${pid}-emr-logs
 s3_bucket_scripts=${pid}-pa2
 s3_bucket_scripts_folder=${s3_bucket_scripts}/src
-emr_cluster=${pid}-emr-cluster
+
 if [[ -n "$pid" ]]; then
-    if aws2 s3api head-bucket --bucket "${s3_bucket_logs}"; then
+    if s3_check_exists "${s3_bucket_logs}"; then
         echo "EMR logs bucket ${s3_bucket_logs} already exists, skipping"
     else
         echo "Creating emr logs bucket: ${s3_bucket_logs}"
-        aws2 s3api create-bucket --acl private --bucket "${s3_bucket_logs}" --region "${region}" --create-bucket-configuration LocationConstraint="${region}"
+        s3_create_bucket "${s3_bucket_logs}"
+        s3_block_public "${s3_bucket_logs}"
     fi
-    if aws2 s3api head-bucket --bucket "${s3_bucket_scripts}"; then
+    if s3_check_exists "${s3_bucket_scripts}"; then
         echo "Scripts bucket ${s3_bucket_scripts} already exists, updating the bucket with missing files"
         update_script_bucket
     else
         echo "Creating scripts bucket: ${s3_bucket_scripts}"
-        aws2 s3api create-bucket --acl private --bucket "${s3_bucket_scripts}" --region "${region}" --create-bucket-configuration LocationConstraint="${region}" &&
+        s3_create_bucket "${s3_bucket_scripts}" &&
         echo "Copying PA2 scripts ..."
         update_script_bucket
 
@@ -113,7 +116,10 @@ else
     echo "Argument error: pid"
     exit 1
 fi
+# -------------––--------------------------------------------------------------
 
+# -------------––-------------- spawning cluster ------------------------------
+emr_cluster=${pid}-emr-cluster
 if [ "$deploy" = 'true' ]; then
 
     instance_type="m5.xlarge"
@@ -144,7 +150,7 @@ if [  -z "$cluster_id" ]; then
     echo "cluster failed to start"
     exit
 fi
-# 
+
 echo "Cluster starting ... cluster ID: ${cluster_id}"
 
 
@@ -168,5 +174,5 @@ ret=$(aws2 emr describe-cluster --cluster-id "${cluster_id}")
 dns_name=$(echo $ret | jq -r '.Cluster.MasterPublicDnsName')
 echo "Cluster specs: cluster id: ${cluster_id}, region: ${region}, instance type: ${instance_type}, worker number: ${num_worker}, spot option: ${spot}"
 echo "Master public DNS name: ${dns_name}, user name: hadoop"
+# -------------––--------------------------------------------------------------
 
-# --steps Type=CUSTOM_JAR,Name=CustomJAR,ActionOnFailure=CONTINUE,Jar=s3://"${region}".elasticmapreduce/libs/script-runner/script-runner.jar,Args=["s3://YOUR_BUCKET/YOUR_SHELL_SCRIPT.sh"]
