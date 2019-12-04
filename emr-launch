@@ -119,7 +119,6 @@ if [ "$deploy" = 'true' ]; then
     instance_type="m5.xlarge"
 else
     instance_type="m4.large"
-    spot='true'    
 fi
 
 if [ "$spot" = 'true' ]; then
@@ -162,12 +161,12 @@ until [ "$state" = "WAITING" ]; do
 done
 
 if [ "$state" = "WAITING" ]; then
-    printf "\nCluster is up"
+    printf "\nCluster is up\n"
 fi
 
 ret=$(aws2 emr describe-cluster --cluster-id "${cluster_id}")
 dns_name=$(echo $ret | jq -r '.Cluster.MasterPublicDnsName')
-echo "Cluster specs: region: ${region}, instance type: ${instance_type}, worker number: ${num_worker}, spot option: ${spot}"
+echo "Cluster specs: cluster id: ${cluster_id}, region: ${region}, instance type: ${instance_type}, worker number: ${num_worker}, spot option: ${spot}"
 echo "Master public DNS name: ${dns_name}, user name: hadoop"
 
 # --steps Type=CUSTOM_JAR,Name=CustomJAR,ActionOnFailure=CONTINUE,Jar=s3://"${region}".elasticmapreduce/libs/script-runner/script-runner.jar,Args=["s3://YOUR_BUCKET/YOUR_SHELL_SCRIPT.sh"]

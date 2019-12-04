@@ -13,12 +13,13 @@ if [ ! -d /mnt/home ]; then
 fi
 sudo yum update -y
 sudo yum install -y htop git ;
-sudo pip-3.6 install paramiko nltk scipy scikit-learn pandas matplotlib gensim pyspark==2.4.4 jupyter jupyter_contrib_nbextensions jupyter_nbextensions_configurator;
-sudo /usr/local/bin/jupyter contrib nbextension install --system ;
-sudo /usr/local/bin/jupyter nbextensions_configurator enable --system ;
-sudo /usr/local/bin/jupyter nbextension enable code_prettify/code_prettify;
-sudo /usr/local/bin/jupyter nbextension enable execute_time/ExecuteTime;
-sudo /usr/local/bin/jupyter nbextension enable collapsible_headings/main;
+sudo pip-3.6 install paramiko nltk scipy scikit-learn pandas matplotlib gensim pyspark==2.4.4 jupyter yapf jupyter_contrib_nbextensions jupyter_nbextensions_configurator;
+sudo jupyter contrib nbextension install --system ;
+sudo jupyter nbextensions_configurator enable --system ;
+sudo jupyter nbextension enable code_prettify/code_prettify --system ;
+sudo jupyter nbextension enable execute_time/ExecuteTime --system ;
+sudo jupyter nbextension enable collapsible_headings/main --system ;
+sudo jupyter nbextension enable freeze/main --system ;
 
 echo 'export PYSPARK_PYTHON="/usr/bin/python3.6"' >> $HOME/.bashrc && source $HOME/.bashrc
 echo 'export SPARK_HOME="/usr/lib/spark"' >> $HOME/.bashrc && source $HOME/.bashrc
