@@ -103,6 +103,9 @@ EOF
     # start jupyter daemon
     echo "Starting Jupyter Daemon"
     sudo initctl start jupyter
+
+
+    ### Setup theia deamon and launch it
     if [ "${THEIA}" = 'true' ]; then
         echo "Creating Theia Daemon"
         sudo yum -y install docker
@@ -118,7 +121,7 @@ respawn limit 0 10
 
 script
 sudo su - hadoop > /var/log/theia.log 2>&1 <<BASH_SCRIPT
-      sudo docker run -it --init -p 3000:3000 -v "/mnt:/home/project:cached" theiaide/theia-python:next
+      sudo docker run --init -p 3000:3000 -v "/mnt:/home/project:cached" theiaide/theia-python:next
 BASH_SCRIPT
 
 end script
