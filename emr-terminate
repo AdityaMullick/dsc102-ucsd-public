@@ -1,0 +1,4 @@
+#!/bin/bash
+set -e
+
+aws2 emr terminate-clusters --cluster-ids "$@"

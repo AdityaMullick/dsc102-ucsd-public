@@ -161,6 +161,8 @@ else
     instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type"    
 fi
 
+echo ${theia}
+
 ret=$(aws2 emr create-cluster \
 --release-label "${label}" \
 --instance-groups InstanceGroupType=MASTER,InstanceCount=1,InstanceType=$instance_type InstanceGroupType=CORE,"$instance_group_core" \
