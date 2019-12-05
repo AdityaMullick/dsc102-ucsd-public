@@ -1,0 +1,84 @@
+#!/bin/bash
+set -e
+s3_check_exists() {
+    aws2 s3api head-bucket --bucket "${1}"
+}
+s3_block_public() {
+    aws2 s3api put-public-access-block --bucket $1 \
+        --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+}
+s3_create_bucket() {
+    aws2 s3api create-bucket --acl private \
+        --bucket "${1}" \
+        --region "${region}" \
+        --create-bucket-configuration LocationConstraint="${region}"
+    s3_block_public "${1}"
+}
+s3_put_versioning() {
+    aws2 s3api put-bucket-versioning --bucket "${1}" --versioning-configuration Status=Enabled
+}
+
+update_script_bucket(){
+    n=0
+    retrytime=3
+    until aws2 s3api head-bucket --bucket "$s3_bucket_scripts" 2>/dev/null; do
+        if [ $n -ge $retrytime ]; then
+            break
+        fi
+        ((++n))
+        echo "Bucket not up, retrying ..."
+        sleep 20
+    done
+
+    if [ $n -le $retrytime ]; then
+        aws2 s3_put_versioning "${s3_bucket_scripts}"
+        aws2 s3 sync "${S3_PA2_PUBLIC}" "s3://${s3_bucket_scripts_folder}"
+    else
+        echo "Bucket not up, retry timeout"
+        exit 1
+    fi
+}
+
+pid="${PID}"
+force='false'
+while getopts 'u:f' flag; do
+  case "${flag}" in
+    u) pid="${OPTARG}" ;;
+    f) force="true" ;;
+    ?) printf '\nUsage: %s: [-u:] your pid \n' $0; exit 2 ;;
+  esac
+done
+
+
+
+
+s3_bucket_logs=${pid}${S3_LOGS_POSTFIX}
+s3_bucket_scripts=${pid}${S3_PA2_POSTFIX}
+s3_bucket_scripts_folder=${s3_bucket_scripts}/${S3_PA2_SRC_FOLDER}
+
+if [[ -n "$pid" ]]; then
+    if s3_check_exists "${s3_bucket_logs}"; then
+        echo "EMR logs bucket ${s3_bucket_logs} already exists, skipping"
+    else
+        echo "Creating emr logs bucket: ${s3_bucket_logs}"
+        s3_create_bucket "${s3_bucket_logs}"
+    fi
+    if s3_check_exists "${s3_bucket_scripts}"; then
+        if [ "${force}" = 'false' ]; then
+            echo "ERROR: the script bucket exists, skipping sync. To force sync, set flag -f"
+            exit 1
+        else
+            echo "Scripts bucket ${s3_bucket_scripts} already exists, updating the bucket with missing files"
+            update_script_bucket
+        fi
+    else
+        echo "Creating scripts bucket: ${s3_bucket_scripts}"
+        s3_create_bucket "${s3_bucket_scripts}" &&
+        echo "Copying PA2 scripts ..."
+        update_script_bucket
+
+    fi
+else
+    echo "Argument error: pid"
+    exit 1
+fi

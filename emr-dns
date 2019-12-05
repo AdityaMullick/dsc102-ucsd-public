@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+ret=$(aws2 emr describe-cluster --cluster-id "${1}")
+dns_name=$(echo $ret | jq -r '.Cluster.MasterPublicDnsName')
+
+echo dns_name
