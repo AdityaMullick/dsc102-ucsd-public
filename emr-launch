@@ -17,7 +17,7 @@ cleanup_spinner() {
 }
 
 s3_check_exists() {
-    aws2 s3api head-bucket --bucket "${1}"
+    aws2 s3api head-bucket --bucket "${1}" 2>/dev/null
 }
 
 
@@ -61,7 +61,7 @@ while getopts 'u:bfvr:l:k:n:dp:t' flag; do
     f) force='true' ;;
     ?) printf '\nUsage: %s: [-u:] your pid [-b] if set, use spot [-r:] region [-l:] EMR label
      [-k:] key name [-n:] number of workers [-d] if set, use deployment env
-     [-p:] bootstrap script path 
+     [-p:] bootstrap script path [-d] if set, use the deployment hardware m5.xlarge
      [-t] if set, setup theia IDE on master node port 3000 [-f] if set, force start the second cluster\n' $0; exit 2 ;;
   esac
 done
@@ -140,7 +140,7 @@ state=''
 spin_pid=$!
 until [ "$state" = "WAITING" ]; do
     state=$(aws2 emr describe-cluster --cluster-id "${cluster_id}" | jq -r .Cluster.Status.State)
-    printf " Current cluster state: ${state}\r"
+    printf "            Current cluster state: ${state}\r"
     if [[ ("${state}" = "TERMINATED") || ("${state}" = "TERMINATING") || ("${state}" = "TERMINATED_WITH_ERRORS") ]]; then
         echo " Cluster terminated accidently. Check logs on AWS console."
         break

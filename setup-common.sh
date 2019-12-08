@@ -20,6 +20,8 @@ sudo /usr/local/bin/jupyter nbextension enable code_prettify/code_prettify --sys
 sudo /usr/local/bin/jupyter nbextension enable execute_time/ExecuteTime --system ;
 sudo /usr/local/bin/jupyter nbextension enable collapsible_headings/main --system ;
 sudo /usr/local/bin/jupyter nbextension enable freeze/main --system ;
+sudo /usr/local/bin/jupyter nbextension enable spellchecker/main --system ;
+
 
 echo 'export PYSPARK_PYTHON="/usr/bin/python3.6"' >> $HOME/.bashrc && source $HOME/.bashrc
 echo 'export SPARK_HOME="/usr/lib/spark"' >> $HOME/.bashrc && source $HOME/.bashrc
