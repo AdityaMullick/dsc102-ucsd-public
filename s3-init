@@ -84,3 +84,26 @@ else
     echo "Argument error: pid"
     exit 1
 fi
+
+
+# Create emr security group
+# aws2 ec2 create-security-group --description "For PA2 EMR master, exposes port 8888, 20888, 8088, 3000, and 18080 for all ingress" \
+#     --group-name "pa2-emr-master"
+# aws2 ec2 authorize-security-group-ingress --group-name "pa2-emr-master" \
+#     --protocol tcp \
+#     --port 8888 \
+#     --cidr 0.0.0.0/0
+# aws2 ec2 authorize-security-group-ingress --group-name "pa2-emr-master" \
+#     --protocol tcp \
+#     --port 20888 \
+#     --cidr 0.0.0.0/0
+# aws2 ec2 authorize-security-group-ingress --group-name "pa2-emr-master" \
+#     --protocol tcp \
+#     --port 3000 \
+#     --cidr 0.0.0.0/0
+# aws2 ec2 authorize-security-group-ingress --group-name "pa2-emr-master" \
+#     --protocol tcp \
+#     --port 18080 \
+#     --cidr 0.0.0.0/0
+
+
