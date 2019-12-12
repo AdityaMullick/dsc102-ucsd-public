@@ -32,7 +32,7 @@ update_script_bucket(){
 
     if [ $n -le $retrytime ]; then
         s3_put_versioning "${s3_bucket_scripts}"
-        aws2 s3 sync "${S3_PA2_PUBLIC}" "s3://${s3_bucket_scripts_folder}"
+        aws2 s3 sync "${S3_PA2_PUBLIC}/${S3_PA2_SRC_FOLDER}" "s3://${s3_bucket_scripts_folder}"
     else
         echo "Bucket not up, retry timeout"
         exit 1
