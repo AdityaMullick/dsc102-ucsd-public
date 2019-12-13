@@ -75,7 +75,7 @@ if [[ -n "$pid" ]]; then
         fi
     else
         echo "Creating scripts bucket: ${s3_bucket_scripts}"
-        s3_create_bucket "${s3_bucket_scripts}" &&
+        s3_create_bucket "${s3_bucket_scripts}"
         echo "Copying PA2 scripts ..."
         update_script_bucket
 
