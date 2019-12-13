@@ -91,11 +91,13 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     ec2-###-##-##-###.compute-1.amazonaws.com
     ``````
     
-1. You can now SSH into your master node via:
+1. (Optional) You can now try to SSH into your master node via:
     
     ```bash
     ssh -i path/to/key hadoop@ec2-###-##-##-###.compute-1.amazonaws.com
     ```
+    
+    Log out the ssh session and proceed to the next steps.
     
 1. Follow the section *Set Up an SSH Tunnel to the Master Node Using Dynamic Port Forwarding* on [link](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-ssh-tunnel.html).
 
@@ -107,7 +109,7 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     ```
     this will direct you to the jupyter notebook running on the master node. The password would be you pid.
     
-1. Optionally and if you used ```-t``` flag when launching the cluster, you can access Theia IDE running on 
+1. (Optional) and if you used ```-t``` flag when launching the cluster, you can access Theia IDE running on 
     ```
     ec2-###-##-##-###.compute-1.amazonaws.com:3000
     ```
