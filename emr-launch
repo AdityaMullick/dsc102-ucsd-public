@@ -86,7 +86,7 @@ s3_bucket_scripts_folder=${s3_bucket_scripts}/${S3_PA2_SRC_FOLDER}
 s3_buckets=("${s3_bucket_logs}" "${s3_bucket_scripts}")
 for bucket in "${s3_buckets[@]}"; do
     if !(s3_check_exists $bucket); then
-        echo "Error: S3 bucket of $bucket does not exist. Run s3-init first."
+        echo "Error: S3 bucket of $bucket does not exist or the token has expired. Run s3-init first or update your credentials.list."
         exit 1
     fi
 done

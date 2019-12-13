@@ -12,5 +12,5 @@ ENV AWS_DEFAULT_REGION='us-west-2' \
     S3_PA2_POSTFIX='-pa2' \
     EMR_CLUSTER_POSTFIX='-emr-cluster' \
     S3_PA2_SRC_FOLDER='src' \
-    S3_PA2_PUBLIC='s3://dsc102-pa2'
+    S3_PA2_PUBLIC='s3://dsc102-pa2-public'
 
