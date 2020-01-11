@@ -161,6 +161,9 @@ kill -9 $spin_pid
 spin_pid=''
 ret=$(aws2 emr describe-cluster --cluster-id "${cluster_id}")
 dns_name=$(echo $ret | jq -r '.Cluster.MasterPublicDnsName')
+echo "Updating security groups ..."
+aws2 ec2 authorize-security-group-ingress --group-name "ElasticMapReduce-master" --ip-permissions '[{"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH access"}]}, {"IpProtocol": "tcp", "FromPort": 8888, "ToPort": 8888, "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "Jupyter Notebook access"}]}]'
+aws2 ec2 authorize-security-group-ingress --group-name "ElasticMapReduce-slave" --ip-permissions '[{"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH access"}]}]'
 echo "Cluster specs: cluster id: ${cluster_id}, region: ${region}, instance type: ${instance_type}, worker number: ${num_worker}, spot option: ${spot}"
 echo "Master public DNS name: ${dns_name}, user name: hadoop"
 # -------------––--------------------------------------------------------------
