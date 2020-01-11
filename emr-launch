@@ -90,6 +90,8 @@ for bucket in "${s3_buckets[@]}"; do
         exit 1
     fi
 done
+# -------------––--------------------------------------------------------------
+
 
 # -------------––-------------- spawning cluster ------------------------------
 
@@ -114,6 +116,9 @@ if [ "$spot" = 'true' ]; then
 else
     instance_group_core="InstanceCount=$num_worker,InstanceType=$instance_type"    
 fi
+# -------------––--------------------------------------------------------------
+
+# ------------------------------ spawn cluster --------------------------------
 
 ret=$(aws2 emr create-cluster \
 --release-label "${label}" \

@@ -1,5 +1,9 @@
 #!/bin/bash
 set -e
+# -------------------------- create default roles -----------------------------
+aws2 emr create-default-roles > /dev/null
+# -------------––--------------------------------------------------------------
+
 s3_check_exists() {
     aws2 s3api head-bucket --bucket "${1}" 2>/dev/null
 }
