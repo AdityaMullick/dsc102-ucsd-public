@@ -36,7 +36,7 @@ AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_SESSION_TOKEN=...
 ```
-Fill in the blanks (placeholded by ```...```) with corresponding values. ```PID``` is your UCSD pid (e.g., a53230999) all in lower case. You can find the rest three AWS credentials from https://ets-apps.ucsd.edu/dsc102-custom-aws/?mode=env. Note this credential is only temporary. You will need to update this file if the token expires. To obtain a new token, simple revisit the url above.
+Fill in the blanks (placeholded by ```...```) with corresponding values. ```PID``` is your UCSD pid (e.g., a13230999) all in lower case. You can find the rest three AWS credentials from https://ets-apps.ucsd.edu/dsc102-custom-aws/?mode=env. Note this credential is only temporary. You will need to update this file if the token expires. To obtain a new token, simple revisit the url above.
 
 ### 2. Initialize assignment-related S3 buckets
 Use the following command to initialize the S3 buckets needed for this assignment:
@@ -76,7 +76,7 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     ```
     This deployment environment is **fixed** and will be used to evaluate all of your submissions. 
 
-### 4. Access your cluster
+### 4. Access your cluster and the assignment
 
 1. Use the following command to list the cluster IDs:
     ```bash
@@ -119,8 +119,51 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     
 1. In Jupyter notebook, rename ```assignment2.ipynb``` to ```<your pid>_assignment2.ipynb``` and continue the assignment by following the instructions written in the notebook.
 
-### 5.  Terminate your cluster
+### 5. Testing and submitting
+You will **not** submit the notebook. Instead, you need to put your implementation of ```task_1``` to ```task_6```, along with all the dependencies you imported and helper functions you defined, in the file co-located with the notebook: ```assignment2.py```. Do **not** modify the name of this file.
+
+If you are collaborating in team, please combine your work into one single file. Only **one** person needs to submit the final file.
+
+#### 5.1. Test your file
+Before submitting the file, you need to make sure your script runs under the deployment environment, otherwise you may lose points.
+
+1. If your cluster is not in deployment mode, terminate your current cluster (see instructions below), then launch a deployment cluster via
+	```bash
+docker run --env-file path/to/credentials.list yuhzhang/dsc102-pa2 emr-launch -k <key name> -n 4 -d -t
+	```
+
+2. SSH into the master node by
+	```bash
+	ssh -i path/to/key hadoop@ec2-###-##-##-###.compute-1.amazonaws.com
+	```
+
+3. Go to your root directory of scripts
+	```bash
+	cd /mnt/<your pid>-pa2/src
+	```
+4. Run PA2 with the following command, do not modify anything except ``` <your pid>```: 
+	```bash
+    spark-submit \
+    --py-files utilities.py,assignment2.py \
+    --files log4j-spark.properties \
+    --master yarn \
+    --deploy-mode client \
+    --conf spark.memory.fraction=0.8 \
+    --conf spark.dynamicAllocation.enabled=false \
+	 --conf spark.sql.crossJoin.enabled=true \
+	 --driver-java-options "-Dlog4j.configuration=file:log4j-spark.properties" \
+	 --conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=file:log4j-spark.properties" \
+	 pa2_main.py --pid <your personal pid>
+	```
+    Make sure your script can execute and try to pass as many tests as you can.
+
+#### 5.2. Submit your file
+Upload your ```assignment2.py``` file to canvas, only one of the team members needs to do so.
+
+### 6.  Terminate your cluster
+
 Don't forget to terminate the cluster when you are done:
 ```bash
 docker run --env-file path/to/credentials.list yuhzhang/dsc102-pa2 emr-terminate <cluster id>
 ```
+
