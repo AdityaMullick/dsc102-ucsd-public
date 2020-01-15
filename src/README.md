@@ -7,14 +7,22 @@ The only prerequisite of this assignment is docker, which can be found in https:
 
 Within the container you are provided with the following utilities
 
+  ```bash
+  s3-init
+  emr-launch
+  emr-list
+  emr-dns
+  emr-terminate
+  ```
+The entry point of these utilities is 
 ```bash
-s3-init
-emr-launch
-emr-list
-emr-dns
-emr-terminate
+docker run --env-file <path> yuhzhang/dsc102-pa2 <utility>
 ```
+```<path>``` is the path to your credential file, see below for instructions. ```<utility>``` is any utility listed above. The AWS CLI tool is also avaliable as ```aws2```. For example, to list your s3 bucket, you can run:
 
+```bash
+docker run --env-file <path> yuhzhang/dsc102-pa2 aws2 s3 ls
+```
 
 
 ### Prepare key pairs on AWS console
@@ -28,7 +36,7 @@ AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_SESSION_TOKEN=...
 ```
-Fill in the blanks (placeholded by ```...```) with corresponding values. ```PID``` is your UCSD pid (e.g., a53230999) in lower case. You can find the rest three values from https://ets-apps.ucsd.edu/dsc102-custom-aws/?mode=env. Note this credential is only temporary. You will need to update this file if the token expires.
+Fill in the blanks (placeholded by ```...```) with corresponding values. ```PID``` is your UCSD pid (e.g., a53230999) all in lower case. You can find the rest three AWS credentials from https://ets-apps.ucsd.edu/dsc102-custom-aws/?mode=env. Note this credential is only temporary. You will need to update this file if the token expires. To obtain a new token, simple revisit the url above.
 
 ### 2. Initialize assignment-related S3 buckets
 Use the following command to initialize the S3 buckets needed for this assignment:
@@ -67,11 +75,6 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     docker run --env-file path/to/credentials.list yuhzhang/dsc102-pa2 emr-launch -k <key name> -n 4 -d -t
     ```
     This deployment environment is **fixed** and will be used to evaluate all of your submissions. 
-1. Don't forget to terminate the cluster when you are done:
-
-    ```bash
-    docker run --env-file path/to/credentials.list yuhzhang/dsc102-pa2 emr-terminate <cluster id>
-    ```
 
 ### 4. Access your cluster
 
@@ -92,7 +95,7 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     ``````
     
 1. (Optional) You can now try to SSH into your master node via:
-    
+   
     ```bash
     ssh -i path/to/key hadoop@ec2-###-##-##-###.compute-1.amazonaws.com
     ```
@@ -107,7 +110,7 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     ```
     ec2-###-##-##-###.compute-1.amazonaws.com:8888
     ```
-    this will direct you to the jupyter notebook running on the master node. The password would be you pid.
+    this will direct you to the jupyter notebook running on the master node. The password would be you pid. The root directory of jupyter is S3 bucket ```<your pid>-pa2``` mounted. So all your modifications to the assignment files will be reflected to that bucket.
     
 1. (Optional) and if you used ```-t``` flag when launching the cluster, you can access Theia IDE running on 
     ```
@@ -115,3 +118,9 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     ```
     
 1. In Jupyter notebook, rename ```assignment2.ipynb``` to ```<your pid>_assignment2.ipynb``` and continue the assignment by following the instructions written in the notebook.
+
+### 5.  Terminate your cluster
+Don't forget to terminate the cluster when you are done:
+```bash
+docker run --env-file path/to/credentials.list yuhzhang/dsc102-pa2 emr-terminate <cluster id>
+```

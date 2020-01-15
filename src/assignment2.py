@@ -1,7 +1,7 @@
 import os
 import pyspark.sql.functions as F
 import pyspark.sql.types as T
-
+import pyspark.ml as M
 import argparse
 from utilities import SEED
 # import any other dependencies you want, but make sure only to use the ones
@@ -10,10 +10,7 @@ from utilities import SEED
 # ---------------- choose input format, dataframe or rdd ----------------------
 INPUT_FORMAT = 'dataframe'  # change to 'rdd' if you wish to use rdd inputs
 # -----------------------------------------------------------------------------
-if INPUT_FORMAT == 'dataframe':
-    import pyspark.ml as M
-elif INPUT_FORMAT == 'rdd':
-    import pyspark.mllib as M
+
 # ---------- Begin definition of helper functions, if you need any ------------
 
 
@@ -221,9 +218,13 @@ def task_5(data_io, product_processed_data, word_0, word_1, word_2):
         'word_2_synonyms': [(None, None), ]
     }
     # Modify res:
-
-
-
+    res['count_total'] = product_processed_data_output.count()
+    res['size_vocabulary'] = model.getVectors().count()
+    for name, word in zip(
+        ['word_0_synonyms', 'word_1_synonyms', 'word_2_synonyms'],
+        [word_0, word_1, word_2]
+    ):
+        res[name] = model.findSynonymsArray(word, 10)
     # -------------------------------------------------------------------------
 
     # ----------------------------- Do not change -----------------------------
