@@ -1,9 +1,47 @@
 # Assignment 2 DSC 102 2020 WI
 
+## Overview
+
+In this assignment we will conduct data engineering for the Amazon dataset. The extracted features will be used for your next assignment, where you train a model (or models) to predict user ratings for a product.
+
+We will be using Apache Spark and conduct the tasks on AWS EMR, Amazon's managed service for Hadoop ecosystem applications. 
+
+You will spawn an EMR cluster (several EC2 instances with EMR added) on AWS. You will then connect to the master node of the cluster and finish all the developments and tests there. You are not expected to code anything locally. 
+
+This statement serves as instructions on how to spawn the cluster and a description of the development environment set up for you. For task descriptions, please refer to the notebook file.
+
+### Dev-kit
+
+A dev kit including all task descriptions, code skeletons, and other necessary files is provided on [S3 Link](s3://dsc102-pa2-public) or [Github Link](https://github.com/makemebitter/dsc102-ucsd-public/tree/master/src). When you spawn the cluster, this dev kit will be prepared on your cluster's master node automatically, you do not need to manually download them.
+
+Within the dev-kit there are several files:
+
+```
+README.MD -- this statement you are currently reading
+------------------------------
+assignment2.ipynb -- the task descriptions and a play ground for your development
+assignment2.py -- the deliverable of this assignment, your final submitting file
+------------------------------
+log4j-spark.properties
+pa2_main.py
+utilities.py -- all these three files are necessary for your code to run, but do not modify any of them
+```
+
+### Datasets
+
+All the datasets required for this assignment can be found in [S3 Link](s3://dsc102-pa2-public/dataset). We will be reading from this S3 bucket directly. You do not need to download the dataset.
+
+### EMR-related utilities
+
+You are provided several utilities to help you setup and configure your EMR cluster. All of them are containerized as ```yuhzhang/dsc102-pa2```. See below for descriptions.
+
 ## Getting started
 
-### Prerequisite
-The only prerequisite of this assignment is docker, which can be found in https://docs.docker.com/install/. A container image ```yuhzhang/dsc102-pa2``` will be used as the client for all AWS-related operations.
+### 0. Prerequisite
+
+#### Docker
+
+The only prerequisite of this assignment is docker, which can be found in https://docs.docker.com/install/. A container image ```yuhzhang/dsc102-pa2``` will be used for all AWS-related operations.
 
 Within the container you are provided with the following utilities
 
@@ -25,8 +63,8 @@ docker run --env-file <path> yuhzhang/dsc102-pa2 aws2 s3 ls
 ```
 
 
-### Prepare key pairs on AWS console
-If you have not done so. Go to your [AWS console ](https://ets-apps.ucsd.edu/dsc102-custom-aws/ )and click key pairs. Follow the instructions to create or upload a public key to AWS. Note down the name of the key.
+#### Prepare key pairs on AWS console
+If you have not done so. Go to your [AWS console ](https://ets-apps.ucsd.edu/dsc102-custom-aws/ )and click key pairs. Follow the instructions to create or upload a public key to AWS. Note down the name of the key as displayed on your AWS console.
 
 ### 1. Store AWS credentials
 Create a new text file named ```credentials.list``` and put the following content in it:
@@ -36,7 +74,7 @@ AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_SESSION_TOKEN=...
 ```
-Fill in the blanks (placeholded by ```...```) with corresponding values. ```PID``` is your UCSD pid (e.g., a13230999) all in lower case. You can find the rest three AWS credentials from https://ets-apps.ucsd.edu/dsc102-custom-aws/?mode=env. Note this credential is only temporary. You will need to update this file if the token expires. To obtain a new token, simple revisit the url above.
+Fill in the blanks (placeholded by ```...```) with corresponding values. ```PID``` is your UCSD pid (e.g., a13230999) all in lower case. You can find the rest three AWS credentials from https://ets-apps.ucsd.edu/dsc102-custom-aws/?mode=env. Note these credentials are only temporary. You will need to update this file if the token expires. To obtain a new token, simple revisit the url above.
 
 ### 2. Initialize assignment-related S3 buckets
 Use the following command to initialize the S3 buckets needed for this assignment:
@@ -100,7 +138,7 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
     ssh -i path/to/key hadoop@ec2-###-##-##-###.compute-1.amazonaws.com
     ```
     
-    Log out the ssh session and proceed to the next steps.
+    Log out the ssh session before proceeding to the next steps.
     
 1. Follow the section *Set Up an SSH Tunnel to the Master Node Using Dynamic Port Forwarding* on [link](https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-ssh-tunnel.html).
 
@@ -120,7 +158,7 @@ This command will setup a EMR log bucket named ```<your pid>-emr-logs```, and a 
 1. In Jupyter notebook, rename ```assignment2.ipynb``` to ```<your pid>_assignment2.ipynb``` and continue the assignment by following the instructions written in the notebook.
 
 ### 5. Testing and submitting
-You will **not** submit the notebook. Instead, you need to put your implementation of ```task_1``` to ```task_6```, along with all the dependencies you imported and helper functions you defined, in the file co-located with the notebook: ```assignment2.py```. Do **not** modify the name of this file.
+You will **not** submit the notebook. Instead, you need to put your implementations of ```task_1``` to ```task_6```, along with all the dependencies you imported and helper functions you defined, in the file co-located with the notebook: ```assignment2.py```. Do **not** modify the name of this file.
 
 If you are collaborating in team, please combine your work into one single file. Only **one** person needs to submit the final file.
 
@@ -153,7 +191,7 @@ docker run --env-file path/to/credentials.list yuhzhang/dsc102-pa2 emr-launch -k
 	 --conf spark.sql.crossJoin.enabled=true \
 	 --driver-java-options "-Dlog4j.configuration=file:log4j-spark.properties" \
 	 --conf "spark.executor.extraJavaOptions=-Dlog4j.configuration=file:log4j-spark.properties" \
-	 pa2_main.py --pid <your personal pid>
+	 pa2_main.py --pid <your pid>
 	```
     Make sure your script can execute and try to pass as many tests as you can.
 
