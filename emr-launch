@@ -165,10 +165,16 @@ echo "Cluster specs: cluster id: ${cluster_id}, region: ${region}, instance type
 echo "Master public DNS name: ${dns_name}, user name: hadoop"
 echo "Updating security groups ..."
 set +e
-aws2 ec2 authorize-security-group-ingress \
+for i in "22 SSH" "8888 Jupyter-Notebook" "3000 Theia-IDE" "18080 Spark-history-UI" "20888 Spark-UI"
+do
+    set -- $i
+    aws2 ec2 authorize-security-group-ingress \
     --group-name "ElasticMapReduce-master" \
-    --ip-permissions '[{"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH access"}]}, {"IpProtocol": "tcp", "FromPort": 8888, "ToPort": 8888, "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "Jupyter Notebook access"}]}]' \
+    --protocol tcp \
+    --port ${1} \
+    --cidr 0.0.0.0/0 \
     > /dev/null 2>&1
+done
 aws2 ec2 authorize-security-group-ingress \
     --group-name "ElasticMapReduce-slave" \
     --ip-permissions '[{"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH access"}]}]' \

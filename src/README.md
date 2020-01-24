@@ -24,7 +24,7 @@ assignment2.py -- the deliverable of this assignment, your final submitting file
 ------------------------------
 log4j-spark.properties
 pa2_main.py
-utilities.py -- all these three files are necessary for your code to run, but do not modify any of them
+utilities.py -- all these three files are necessary for your code to run. Do not modify any of them
 ```
 
 ### Datasets
@@ -33,7 +33,7 @@ All the datasets required for this assignment can be found in [S3 Link](s3://dsc
 
 ### EMR-related utilities
 
-You are provided several utilities to help you setup and configure your EMR cluster. All of them are containerized as ```yuhzhang/dsc102-pa2```. See below for descriptions.
+You are provided with several utilities to help you setup and configure your EMR cluster. All of them are containerized as ```yuhzhang/dsc102-pa2```. See below for descriptions.
 
 ## Getting started
 
@@ -41,7 +41,7 @@ You are provided several utilities to help you setup and configure your EMR clus
 
 #### Docker
 
-The only prerequisite of this assignment is docker, which can be found in https://docs.docker.com/install/. A container image ```yuhzhang/dsc102-pa2``` will be used for all AWS-related operations.
+The only dependency of this assignment is docker, which can be found in https://docs.docker.com/install/. A container image ```yuhzhang/dsc102-pa2``` will be used for all AWS-related operations.
 
 Within the container you are provided with the following utilities
 
@@ -74,7 +74,7 @@ AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_SESSION_TOKEN=...
 ```
-Fill in the blanks (placeholded by ```...```) with corresponding values. ```PID``` is your UCSD pid (e.g., a13230999) all in lower case. You can find the rest three AWS credentials from https://ets-apps.ucsd.edu/dsc102-custom-aws/?mode=env. Note these credentials are only temporary. You will need to update this file if the token expires. To obtain a new token, simple revisit the url above.
+Fill in the blanks (placeholded by ```...```) with corresponding values. ```PID``` is your UCSD pid (e.g., a13230999) all in lower case. You can find the rest three AWS credentials from [Link](https://ets-apps.ucsd.edu/dsc102-custom-aws/?mode=env). Note these credentials are only temporary. You will need to update this file if the token expires. To obtain a new token, simple revisit the url above.
 
 ### 2. Initialize assignment-related S3 buckets
 Use the following command to initialize the S3 buckets needed for this assignment:
@@ -196,6 +196,9 @@ docker run --env-file path/to/credentials.list yuhzhang/dsc102-pa2 emr-launch -k
     Make sure your script can execute and try to pass as many tests as you can.
 
 #### 5.2. Submit your file
+
+Go to your AWS console, navigate to S3 buckets and find the bucket named ```<your pid>-pa2```. Download the ```assignment2.py``` file you just tested to your local machine.
+
 Upload your ```assignment2.py``` file to canvas, only one of the team members needs to do so.
 
 ### 6.  Terminate your cluster
