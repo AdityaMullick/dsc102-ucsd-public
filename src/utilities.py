@@ -4,6 +4,7 @@ import pyspark.sql.types as T
 import numpy as np
 import os
 import traceback
+from collections import Mapping
 from math import isclose
 SEED = 102
 TASK_NAMES = ['task_' + str(i) for i in range(1, 7)]
@@ -42,6 +43,7 @@ class PA2Test(object):
             except Exception as e:
                 print(e)
                 traceback.print_exc()
+        self.dict_res['task_0'] = {'count_total': 9430000, 'mean_price': 34.93735609456491}
 
     def test(self, res, task_name):
         row = 79
@@ -65,7 +67,6 @@ class PA2Test(object):
                 test_dict['test_name'] = test_name
                 test_dict['count'] = count
                 count = self.identical_test(test_name, res[k], v, **test_dict)
-
         elif task_name == 'task_5':
             total_length = 10
             test_dict['total_count'] = 8
@@ -167,6 +168,7 @@ def spark_init(pid):
     spark = SparkSession.builder.appName(pid).getOrCreate()
     url = spark.conf.get(
         'spark.org.apache.hadoop.yarn.server.webproxy.amfilter.AmIpFilter.param.PROXY_URI_BASES')
+    url = 'https://<DNS name/Public IP address of master node>' + ':' + url.split(':')[2]
     print('Connect to Spark UI: {}'.format(url))
     return spark
 
@@ -283,11 +285,16 @@ class PA2Data(object):
         print ("Done")
         return data_dict, count_dict
 
-    def save(self, res, task_name):
-        if task_name in TASK_NAMES:
-            df = self.spark.createDataFrame([res])
+    def save(self, res, task_name, filename=None):
+        if task_name in TASK_NAMES or task_name in ['task_0', 'summary']:
+            if not filename:
+                filename = task_name
+            if isinstance(res, Mapping):
+                df = self.spark.createDataFrame([res])
+            else:
+                df = self.spark.createDataFrame(res)
             output_path = os.path.join(
-                self.output_root, task_name + EXT)
+                self.output_root, filename + EXT)
             df.coalesce(1).write.mode('overwrite').json(output_path)
         else:
             raise ValueError
