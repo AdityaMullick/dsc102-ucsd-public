@@ -42,7 +42,7 @@ spot='false'
 region="${AWS_DEFAULT_REGION}"
 label="${EMR_DEFAULT_LABEL}"
 num_worker=4
-deploy='false'
+deploy='true'
 theia='false'
 force='false'
 bootstrap_path="${BOOTSTRAPE_PATH}"
@@ -56,13 +56,13 @@ while getopts 'u:bfvr:l:k:n:dp:t' flag; do
     l) label="${OPTARG}" ;;
     k) key="${OPTARG}" ;;
     n) num_worker=${OPTARG} ;;
-    d) deploy='true' ;;
+    # d) deploy='true' ;;
     p) bootstrap_path="${OPTARG}" ;;
     t) theia='true' ;;
     f) force='true' ;;
     ?) printf '\nUsage: %s: [-u:] your pid [-b] if set, use spot [-r:] region [-l:] EMR label
      [-k:] key name [-n:] number of workers
-     [-p:] bootstrap script path [-d] if set, use the deployment hardware m5.xlarge
+     [-p:] bootstrap script path
      [-t] if set, setup theia IDE on master node port 3000 [-f] if set, force start the second cluster\n' $0; exit 2 ;;
   esac
 done
