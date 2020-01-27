@@ -1,9 +1,8 @@
-import os
 import argparse
 import time
 import traceback
 import importlib
-
+import os
 from utilities import spark_init
 from utilities import PA2Test
 from utilities import PA2Data
@@ -11,7 +10,7 @@ from utilities import TASK_NAMES
 
 
 class PA2Executor(object):
-    def __init__(self, args, task_imls=None, input_format='dataframe'):
+    def __init__(self, args, task_imls=None, input_format='dataframe', synonmys=['piano', 'rice', 'laptop']):
         self.spark = spark_init(args.pid)
         path_dict = {
             'review': args.review_filename,
@@ -21,12 +20,13 @@ class PA2Executor(object):
 
         self.task_imls = task_imls
         self.tests = PA2Test(self.spark, args.test_results_root)
-
-        self.data_io = PA2Data(self.spark, path_dict, args.output_root, deploy=True)
+        output_root_pid = os.path.join(args.output_root, args.pid)
+        self.data_io = PA2Data(self.spark, path_dict, output_root_pid, deploy=True)
 
         self.data_dict, self.count_dict = self.data_io.load_all(
             input_format=input_format)
         self.task_names = TASK_NAMES
+        self.synonmys = synonmys
 
     def arguments(self):
         arguments = {
@@ -34,7 +34,7 @@ class PA2Executor(object):
             "task_2": [self.data_io, self.data_dict['product'][['asin', 'categories', 'salesRank']]],
             "task_3": [self.data_io, self.data_dict['product'][['asin', 'related', 'price']]],
             "task_4": [self.data_io, self.data_dict['product'][['price', 'title']]],
-            "task_5": [self.data_io, self.data_dict['product_processed'], 'piano', 'rice', 'laptop'],
+            "task_5": [self.data_io, self.data_dict['product_processed']] + self.synonmys,
             "task_6": [self.data_io, self.data_dict['product_processed']]
         }
         return arguments
@@ -117,9 +117,15 @@ if __name__ == "__main__":
         '--output_root', type=str,
         default=None
     )
+    parser.add_argument('--synonmys', nargs='+', type=str, default=['piano', 'rice', 'laptop'])
     args = parser.parse_args()
     if not args.output_root:
         args.output_root = 's3://{}-pa2/outputs'.format(args.pid)
     task_imls = importlib.import_module(args.module_name)
-    pa2 = PA2Executor(args, task_imls, task_imls.INPUT_FORMAT)
-    pa2.eval()
+    pa2 = PA2Executor(args, task_imls, task_imls.INPUT_FORMAT, args.synonmys)
+    results, timings = pa2.eval()
+    res = []
+    for task_name, result, timing in zip(TASK_NAMES, results, timings):
+        res.append({'task_name': task_name,
+                   'passed': result, 'time_sec': timing})
+        pa2.data_io.save(res, 'summary')
