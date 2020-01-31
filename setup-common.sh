@@ -14,7 +14,7 @@ fi
 sudo yum update -y
 sudo yum install -y htop git pandoc;
 sudo pip-3.6 install pypandoc;
-sudo pip-3.6 install paramiko nltk scipy scikit-learn pandas matplotlib gensim pyspark==2.4.4 jupyter yapf jupyter_contrib_nbextensions jupyter_nbextensions_configurator;
+sudo pip-3.6 install paramiko nltk scipy scikit-learn pandas matplotlib gensim pyspark==2.4.4 jupyter yapf jupyter_contrib_nbextensions jupyter_nbextensions_configurator koalas;
 sudo /usr/local/bin/jupyter contrib nbextension install --system ;
 sudo /usr/local/bin/jupyter nbextensions_configurator enable --system ;
 sudo /usr/local/bin/jupyter nbextension enable code_prettify/code_prettify --system ;
