@@ -42,7 +42,7 @@ spot='false'
 region="${AWS_DEFAULT_REGION}"
 label="${EMR_DEFAULT_LABEL}"
 num_worker=4
-deploy='true'
+cheaper='false'
 theia='false'
 force='false'
 bootstrap_path="${BOOTSTRAPE_PATH}"
@@ -56,13 +56,14 @@ while getopts 'u:bfvr:l:k:n:dp:t' flag; do
     l) label="${OPTARG}" ;;
     k) key="${OPTARG}" ;;
     n) num_worker=${OPTARG} ;;
-    # d) deploy='true' ;;
+    c) cheaper='true' ;;
     p) bootstrap_path="${OPTARG}" ;;
     t) theia='true' ;;
     f) force='true' ;;
     ?) printf '\nUsage: %s: [-u:] your pid [-b] if set, use spot [-r:] region [-l:] EMR label
      [-k:] key name [-n:] number of workers
      [-p:] bootstrap script path
+     [-d:] if set, use m4.large, otherwise use m5.xlarge
      [-t] if set, setup theia IDE on master node port 3000 [-f] if set, force start the second cluster\n' $0; exit 2 ;;
   esac
 done
@@ -105,10 +106,10 @@ if [ -n "${id_list}" ]; then
     fi
 fi
 emr_cluster=${pid}${EMR_CLUSTER_POSTFIX}
-if [ "$deploy" = 'true' ]; then
-    instance_type="m5.xlarge"
-else
+if [ "$cheaper" = 'true' ]; then
     instance_type="m4.large"
+else
+    instance_type="m5.xlarge"
 fi
 
 if [ "$spot" = 'true' ]; then
@@ -175,9 +176,21 @@ do
     --cidr 0.0.0.0/0 \
     > /dev/null 2>&1
 done
-aws2 ec2 authorize-security-group-ingress \
+
+for i in "22 SSH" "8042 Spark-UI-node-log"
+do
+    set -- $i
+    aws2 ec2 authorize-security-group-ingress \
     --group-name "ElasticMapReduce-slave" \
-    --ip-permissions '[{"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH access"}]}]' \
+    --protocol tcp \
+    --port ${1} \
+    --cidr 0.0.0.0/0 \
     > /dev/null 2>&1
+done
+
+# aws2 ec2 authorize-security-group-ingress \
+#     --group-name "ElasticMapReduce-slave" \
+#     --ip-permissions '[{"IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "IpRanges": [{"CidrIp": "0.0.0.0/0", "Description": "SSH access"}]}]' \
+#     > /dev/null 2>&1
 # -------------––--------------------------------------------------------------
 

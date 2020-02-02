@@ -10,7 +10,15 @@ from utilities import TASK_NAMES
 
 
 class PA2Executor(object):
-    def __init__(self, args, task_imls=None, input_format='dataframe', synonmys=['piano', 'rice', 'laptop']):
+    def __init__(
+        self,
+        args,
+        task_imls=None,
+        input_format='dataframe',
+        synonmys=['piano', 'rice', 'laptop'],
+        output_pid_folder=False
+    ):
+
         self.spark = spark_init(args.pid)
         path_dict = {
             'review': args.review_filename,
@@ -20,8 +28,11 @@ class PA2Executor(object):
 
         self.task_imls = task_imls
         self.tests = PA2Test(self.spark, args.test_results_root)
-        output_root_pid = os.path.join(args.output_root, args.pid)
-        self.data_io = PA2Data(self.spark, path_dict, output_root_pid, deploy=True)
+        if output_pid_folder:
+            output_root = os.path.join(args.output_root, args.pid)
+        else:
+            output_root = args.output_root
+        self.data_io = PA2Data(self.spark, path_dict, output_root, deploy=True)
 
         self.data_dict, self.count_dict = self.data_io.load_all(
             input_format=input_format)
@@ -30,10 +41,10 @@ class PA2Executor(object):
 
     def arguments(self):
         arguments = {
-            "task_1": [self.data_io, self.data_dict['review'], self.data_dict['product'][['asin']]],
-            "task_2": [self.data_io, self.data_dict['product'][['asin', 'categories', 'salesRank']]],
-            "task_3": [self.data_io, self.data_dict['product'][['asin', 'related', 'price']]],
-            "task_4": [self.data_io, self.data_dict['product'][['price', 'title']]],
+            "task_1": [self.data_io, self.data_dict['review'], self.data_dict['product']],
+            "task_2": [self.data_io, self.data_dict['product']],
+            "task_3": [self.data_io, self.data_dict['product']],
+            "task_4": [self.data_io, self.data_dict['product']],
             "task_5": [self.data_io, self.data_dict['product_processed']] + self.synonmys,
             "task_6": [self.data_io, self.data_dict['product_processed']]
         }

@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 import pyspark.sql.types as T
+import databricks.koalas as ks
 import numpy as np
 import os
 import traceback
@@ -148,7 +149,7 @@ class PA2Test(object):
     @test_deco
     def identical_test(self, k, v1, v2):
         assert isclose(
-                v1, v2, rel_tol=1e-7, abs_tol=0.0), \
+                v1, v2, rel_tol=1e-2, abs_tol=0.0), \
                 'Value of {} should be close enough to {}, but got {} instead'.format(
                     k, v2, v1)
 
@@ -278,7 +279,9 @@ class PA2Data(object):
                     withColumnRenamed('unknownImputedCategory', 'category')
             if input_format == 'rdd':
                 data = data.rdd
-            if self.deploy and not no_cache:
+            elif input_format == 'koalas':
+                data = data.to_koalas()
+            if self.deploy and not no_cache and input_format != 'koalas':
                 data = data.cache()
             data_dict[name] = data
             count_dict[name] = data.count() if not no_cache else None
