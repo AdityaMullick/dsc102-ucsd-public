@@ -12,6 +12,29 @@ TASK_NAMES = ['task_' + str(i) for i in range(1, 7)]
 EXT = '.json'
 
 
+def quantile(rdd, p, sample=None, seed=SEED):
+    """Compute a quantile of order p ∈ [0, 1]
+    :rdd a numeric rdd
+    :p quantile(between 0 and 1)
+    :sample fraction of and rdd to use. If not provided we use a whole dataset
+    :seed random number generator seed to be used with sample
+    """
+    assert 0 <= p <= 1
+    assert sample is None or 0 < sample <= 1
+
+    rdd = rdd if sample is None else rdd.sample(False, sample, seed)
+
+    rddSortedWithIndex = (rdd.sortBy(lambda x: x).zipWithIndex().map(
+        lambda x: (x[1], x[0])).cache())
+
+    n = rddSortedWithIndex.count()
+    h = (n - 1) * p
+
+    rddX, rddXPlusOne = (rddSortedWithIndex.lookup(x)[0][0]
+                         for x in int(np.floor(h)) + np.array([0, 1]))
+    return rddX + (h - np.floor(h)) * (rddXPlusOne - rddX)
+
+
 def test_deco(f):
     def f_new(*args, **kwargs):
         count = kwargs['count']
@@ -281,7 +304,7 @@ class PA2Data(object):
                 data = data.rdd
             elif input_format == 'koalas':
                 data = data.to_koalas()
-            if self.deploy and not no_cache and input_format != 'koalas':
+            if self.deploy and not no_cache:
                 data = data.cache()
             data_dict[name] = data
             count_dict[name] = data.count() if not no_cache else None
