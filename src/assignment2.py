@@ -1,8 +1,6 @@
 import os
 import pyspark.sql.functions as F
 import pyspark.sql.types as T
-
-import argparse
 from utilities import SEED
 # import any other dependencies you want, but make sure only to use the ones
 # availiable on AWS EMR
@@ -12,11 +10,20 @@ INPUT_FORMAT = 'dataframe'  # change to 'rdd' if you wish to use rdd inputs
 # -----------------------------------------------------------------------------
 if INPUT_FORMAT == 'dataframe':
     import pyspark.ml as M
+    import pyspark.sql.functions as F
+    import pyspark.sql.types as T
+if INPUT_FORMAT == 'koalas':
+    import databricks.koalas as ks
+    ks.set_option('compute.default_index_type', 'distributed')
 elif INPUT_FORMAT == 'rdd':
     import pyspark.mllib as M
+    from pyspark.mllib.feature import Word2Vec
+    from pyspark.mllib.linalg import Vectors
+    from pyspark.mllib.linalg.distributed import RowMatrix
 # ---------- Begin definition of helper functions, if you need any ------------
 
-
+# def task_1_helper():
+#   pass
 
 # -----------------------------------------------------------------------------
 
