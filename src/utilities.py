@@ -270,15 +270,18 @@ class PA2Data(object):
         self.deploy = deploy
 
     def load(self, name, path, infer_schema=False):
-        schema = self.schema[name] if not infer_schema else None
-        data = self.spark.read.csv(
-            path,
-            schema=schema,
-            escape='"',
-            quote='"',
-            inferSchema=infer_schema,
-            header=True
-        )
+        if name == 'product_ml':
+            data = self.spark.read.parquet(path)
+        else:
+            schema = self.schema[name] if not infer_schema else None
+            data = self.spark.read.csv(
+                path,
+                schema=schema,
+                escape='"',
+                quote='"',
+                inferSchema=infer_schema,
+                header=True
+            )
         if name == 'product':
             for column, column_schema in self.metadata_schema.items():
                 if column in data.columns:

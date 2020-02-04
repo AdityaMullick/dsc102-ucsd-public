@@ -166,7 +166,8 @@ echo "Cluster specs: cluster id: ${cluster_id}, region: ${region}, instance type
 echo "Master public DNS name: ${dns_name}, user name: hadoop"
 echo "Updating security groups ..."
 set +e
-for i in "22 SSH" "8888 Jupyter-Notebook" "3000 Theia-IDE" "18080 Spark-history-UI" "20888 Spark-UI"
+# "8888 Jupyter-Notebook" "3000 Theia-IDE" "18080 Spark-history-UI" "20888 Spark-UI"
+for i in "22 SSH" 
 do
     set -- $i
     aws2 ec2 authorize-security-group-ingress \
@@ -176,8 +177,8 @@ do
     --cidr 0.0.0.0/0 \
     > /dev/null 2>&1
 done
-
-for i in "22 SSH" "8042 Spark-UI-node-log"
+# "8042 Spark-UI-node-log"
+for i in "22 SSH"
 do
     set -- $i
     aws2 ec2 authorize-security-group-ingress \

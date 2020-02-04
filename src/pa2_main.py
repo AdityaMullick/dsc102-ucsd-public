@@ -23,7 +23,8 @@ class PA2Executor(object):
         path_dict = {
             'review': args.review_filename,
             'product': args.product_filename,
-            'product_processed': args.product_processed_filename
+            'product_processed': args.product_processed_filename,
+            'product_ml': args.product_ml_filename
             }
 
         self.task_imls = task_imls
@@ -112,6 +113,10 @@ if __name__ == "__main__":
     parser.add_argument(
         '--product_processed_filename', type=str,
         default='s3://dsc102-pa2-public/dataset/product_processed.csv'
+    )
+    parser.add_argument(
+        '--product_ml_filename', type=str,
+        default='s3://dsc102-pa2-public/dataset/product_PA3.parquet'
     )
     parser.add_argument(
         '--test_results_root', type=str,
