@@ -12,6 +12,7 @@ spec:
       labels:
         component: spark-master
     spec:
+      hostname: spark-master
       containers:
         - name: spark-master
           image: scnakandala/dsc102-pa2-spark:latest
@@ -24,6 +25,11 @@ spec:
             - containerPort: 7077
             - containerPort: 8080
             - containerPort: 4040
+            - containerPort: 20002
+            - containerPort: 50002
+            - containerPort: 60002
+            - containerPort: 60003
+            - containerPort: 60004
           resources:
             limits:
               memory: "8Gi"
@@ -58,6 +64,24 @@ spec:
     - name: spark
       port: 7077
       targetPort: 7077
+    - name: sparkui
+      port: 4040
+      targetPort: 4040
+    - name: driverport
+      port: 20002
+      targetPort: 20002
+    - name: blockmgrport
+      port: 50002
+      targetPort: 50002
+    - name: fileserverport
+      port: 60002
+      targetPort: 60002
+    - name: broadcastport
+      port: 60003
+      targetPort: 60003
+    - name: replicaport
+      port: 60004
+      targetPort: 60004
   selector:
     component: spark-master
 ---
@@ -82,6 +106,12 @@ spec:
           command: ["/spark-worker"]
           ports:
             - containerPort: 8081
+            - containerPort: 30002
+            - containerPort: 40002
+            - containerPort: 50002
+            - containerPort: 60002
+            - containerPort: 60003
+            - containerPort: 60004
           resources:
             limits:
               memory: "8Gi"
@@ -103,3 +133,33 @@ spec:
         - name: home
           persistentVolumeClaim:
             claimName: home-nfs
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: spark-worker
+spec:
+  ports:
+    - name: webui
+      port: 8081
+      targetPort: 8081
+    - name: workerport
+      port: 30002
+      targetPort: 30002
+    - name: executorport
+      port: 40002
+      targetPort: 40002
+    - name: blockmgr
+      port: 50002
+      targetPort: 50002
+    - name: fileserverport
+      port: 60002
+      targetPort: 60002
+    - name: broadcastport
+      port: 60003
+      targetPort: 60003
+    - name: replicaport
+      port: 60004
+      targetPort: 60004
+  selector:
+    component: spark-worker

@@ -15,7 +15,7 @@ if [ "$#" -eq 1 ] && [ $1 == 'create' ]; then
 	sleep 5
 
 	kubectl get pods
-	status="$(kubectl get pods 2>&1 | awk '/spark-worker/ {print $3}')"
+	status="$(kubectl get pods 2>&1 | awk '/spark-/ {print $3}')"
 	while [[ $status == *'ContainerCreating'* ]]
         do
             sleep 5
@@ -68,7 +68,43 @@ elif [ $# -eq 1 ] && [ $1 == 'delete' ]; then
         echo "========================================================================="
         echo "=> Successfully stopped the Spark cluster"
         echo "========================================================================="
+elif [ $# -eq 1 ] && [ $1 == 'port-forward' ]; then
+        MASTER_POD="$(kubectl get pods 2>&1 | awk '/spark-master/ {print $1}')"
+        if [ $MASTER_POD ]; then
+            process=$(ps -ax -u | grep port-forward | grep $(whoami) | grep spark-master | awk '//{print $2}')
+            if [ $process ]; then
+                kill -9 $process
+            fi
+	    
+            stdbuf -o0 kubectl port-forward --address 127.0.0.1 $MASTER_POD 0:8888 0:8080 0:4040 > $BASEDIR/port_forwarding &
+            #sleep 2
+            temp=$(cat $BASEDIR/port_forwarding | wc -l)
+            while [ $temp != 3 ]
+            do
+                sync && sleep 2
+                temp=$(cat $BASEDIR/port_forwarding | wc -l)
+            done
+
+	    JUPYTER_PORT="$(cat $BASEDIR/port_forwarding | grep 8888 | grep 127.0.0.1 | awk '//{print $3}')"
+            SPARK_MGR_PORT="$(cat $BASEDIR/port_forwarding | grep 8080 | grep 127.0.0.1 | awk '//{print $3}')"
+            SPARK_JOB_PORT="$(cat $BASEDIR/port_forwarding | grep 4040 | grep 127.0.0.1 | awk '//{print $3}')"
+
+            SSH_COMMAND="ssh -N -L 127.0.0.1:8888:$JUPYTER_PORT -L 127.0.0.1:8080:$SPARK_MGR_PORT -L 127.0.0.1:4040:$SPARK_JOB_PORT $(whoami)@dsmlp-login.ucsd.edu"
+
+            echo ""
+            echo "========================================================================="
+            echo "=> Port forwarded successfully"
+            echo "=> Next create a SSH tunnel from your personal computer using the following command:"
+            echo "        $SSH_COMMAND"
+            echo "========================================================================="
+         else
+	    echo ""
+            echo "========================================================================="
+            echo "=> No spark cluster running"
+            echo "=> To start a cluster run: cluster_manager.sh create"
+            echo "========================================================================="
+	 fi
 else
-    echo 'Valid arguments are: create and delete'
+    echo 'Valid arguments are: create, delete, and port-forward'
 fi
 
