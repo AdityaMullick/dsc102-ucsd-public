@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 dataset/
+port_forwarding
+spark-cluster.yaml
 # C extensions
 *.so
 local.sh
