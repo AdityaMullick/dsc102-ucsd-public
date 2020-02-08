@@ -8,8 +8,18 @@ import traceback
 from collections import Mapping
 from math import isclose
 SEED = 102
-TASK_NAMES = ['task_' + str(i) for i in range(1, 7)]
+TASK_NAMES = ['task_' + str(i) for i in range(1, 9)]
 EXT = '.json'
+MASTER_IP = 'spark://0.0.0.0:7077'
+
+
+class data_cat:
+    review_filename = '/dsc102-pa2-public/dataset/user_reviews_train.csv'
+    product_filename = '/dsc102-pa2-public/dataset/metadata_header.csv'
+    product_processed_filename = '/dsc102-pa2-public/dataset/product_processed.csv'
+    ml_features_train_filename = '/dsc102-pa2-public/dataset/ml_features_train.parquet'
+    ml_features_test_filename = '/dsc102-pa2-public/dataset/ml_features_test.parquet'
+    test_results_root = '/dsc102-pa2-public/test_results'
 
 
 def quantile(rdd, p, sample=None, seed=SEED):
@@ -36,15 +46,15 @@ def quantile(rdd, p, sample=None, seed=SEED):
 
 
 def test_deco(f):
-    def f_new(*args, **kwargs):
-        count = kwargs['count']
-        failures = kwargs['failures']
-        total_count = kwargs['total_count']
-        test_name = kwargs['test_name']
+    def f_new(*args, test_dict=None, **kwargs):
+        count = test_dict['count']
+        failures = test_dict['failures']
+        total_count = test_dict['total_count']
+        test_name = test_dict['test_name']
         count += 1
         print ('Test {}/{} : {} ... '.format(count, total_count, test_name), end='')  # noqa
         try:
-            f(*args)
+            f(*args, **kwargs)
             print('Pass')
         except Exception as e:
             failures.append(e)
@@ -67,7 +77,8 @@ class PA2Test(object):
             except Exception as e:
                 print(e)
                 traceback.print_exc()
-        self.dict_res['task_0'] = {'count_total': 9430000, 'mean_price': 34.93735609456491}
+        self.dict_res['task_0'] = {
+            'count_total': 9430000, 'mean_price': 34.93735609456491}
 
     def test(self, res, task_name):
         row = 79
@@ -80,17 +91,25 @@ class PA2Test(object):
         ref_res = self.dict_res[task_name]
         total_count = len(ref_res)
         test_dict = {
-                'count': count,
-                'failures': failures,
-                'total_count': total_count,
-                'test_name': None
-            }
-        if task_name not in ['task_5', 'task_6']:
+            'count': count,
+            'failures': failures,
+            'total_count': total_count,
+            'test_name': None
+        }
+        if task_name in ['task_1', 'task_2', 'task_3', 'task_4']:
             for k, v in ref_res.items():
                 test_name = k
                 test_dict['test_name'] = test_name
                 test_dict['count'] = count
-                count = self.identical_test(test_name, res[k], v, **test_dict)
+                count = self.identical_test(
+                    test_name, res[k], v, test_dict=test_dict)
+        elif task_name in ['task_7', 'task_8']:
+            for k, v in ref_res.items():
+                test_name = k
+                test_dict['test_name'] = test_name
+                test_dict['count'] = count
+                count = self.identical_test(
+                    test_name, res[k], v, rel_tol=0.0, abs_tol=0.1, test_dict=test_dict)
         elif task_name == 'task_5':
             total_length = 10
             test_dict['total_count'] = 8
@@ -105,7 +124,8 @@ class PA2Test(object):
                 test_name = k
                 test_dict['test_name'] = test_name
                 test_dict['count'] = count
-                count = self.identical_test(test_name, res[k], v, **test_dict)
+                count = self.identical_test(
+                    test_name, res[k], v, test_dict=test_dict)
 
             for k in ['word_0_synonyms', 'word_1_synonyms', 'word_2_synonyms']:
                 res_v = dict(res[k])
@@ -113,14 +133,14 @@ class PA2Test(object):
                 test_name = '{}-length'.format(k)
                 test_dict['test_name'] = test_name
                 test_dict['count'] = count
-                count = self.identical_length_test(k, res_v, list(range(total_length)),
-                                                   **test_dict)
+                count = self.identical_length_test(
+                    k, res_v, list(range(total_length)), test_dict=test_dict)
 
                 test_name = '{}-correctness'.format(k)
                 test_dict['test_name'] = test_name
                 test_dict['count'] = count
                 count = self.synonyms_test(
-                    res_v, res_r, total_length, at_least, **test_dict)
+                    res_v, res_r, total_length, at_least, test_dict=test_dict)
 
         elif task_name == 'task_6':
             total_count = 9
@@ -138,15 +158,16 @@ class PA2Test(object):
                 test_name = k
                 test_dict['test_name'] = test_name
                 test_dict['count'] = count
-                count = self.identical_test(test_name, res[k], v, **test_dict)
+                count = self.identical_test(
+                    test_name, res[k], v, test_dict=test_dict)
             for k in ['meanVector_categoryOneHot', 'meanVector_categoryPCA']:
                 res_v = np.abs(res[k])
                 res_r = np.abs(ref_res[k])
                 test_name = '{}-length'.format(k)
                 test_dict['test_name'] = test_name
                 test_dict['count'] = count
-                count = self.identical_length_test(k, res_v, res_r,
-                                                   **test_dict)
+                count = self.identical_length_test(
+                    k, res_v, res_r, test_dict=test_dict)
 
                 for fname, fns in zip(('sum', 'mean', 'variance'),
                                       (np.sum, np.mean, np.var)):
@@ -155,8 +176,9 @@ class PA2Test(object):
                     test_dict['count'] = count
                     vv = fns(res_v)
                     vr = fns(res_r)
-                    count = self.identical_test(test_name, vv, vr, **test_dict)
-        
+                    count = self.identical_test(
+                        test_name, vv, vr, test_dict=test_dict)
+
         print('{}/{} passed'.format(total_count - len(failures), total_count))
         print (''.join(['-' * row]))
         return len(failures) == 0
@@ -167,14 +189,14 @@ class PA2Test(object):
         size2 = len(v2)
         assert size1 == size2, \
             'Length of {} must be {}, but got {} instead'.format(
-                    k, size2, size1)
+                k, size2, size1)
 
     @test_deco
-    def identical_test(self, k, v1, v2):
+    def identical_test(self, k, v1, v2, rel_tol=1e-2, abs_tol=0.0):
         assert isclose(
-                v1, v2, rel_tol=1e-2, abs_tol=0.0), \
-                'Value of {} should be close enough to {}, but got {} instead'.format(
-                    k, v2, v1)
+            v1, v2, rel_tol=rel_tol, abs_tol=abs_tol), \
+            'Value of {} should be close enough to {}, but got {} instead'.format(
+            k, v2, v1)
 
     @test_deco
     def synonyms_test(self, res_v, res_r, total, at_least):
@@ -184,16 +206,26 @@ class PA2Test(object):
             )
         correct = len(set(res_v.keys()).intersection(set(res_r.keys())))
         assert correct >= at_least, \
-                'At least {} synonyms out of {} should overlap with our answer, got only {} instead'. \
-                format(at_least, total, correct)
+            'At least {} synonyms out of {} should overlap with our answer, got only {} instead'. \
+            format(at_least, total, correct)
 
 
 def spark_init(pid):
-    spark = SparkSession.builder.appName(pid).getOrCreate()
-    url = spark.conf.get(
-        'spark.org.apache.hadoop.yarn.server.webproxy.amfilter.AmIpFilter.param.PROXY_URI_BASES')
-    url = 'https://<DNS name/Public IP address of master node>' + ':' + url.split(':')[2]
-    print('Connect to Spark UI: {}'.format(url))
+    spark = SparkSession.builder.master("spark://spark-master:7077")\
+        .config("spark.dynamicAllocation.enabled", 'false')\
+        .config("spark.sql.crossJoin.enabled", "true")\
+        .config("spark.memory.fraction", "0.9")\
+        .config("spark.executor.memory", "15G")\
+        .config("spark.driver.memory", "3G")\
+        .config("spark.driver.extraLibraryPath", "/opt/hadoop/lib/native")\
+        .config("spark.driver.port", "20002")\
+        .config("spark.blockManager.port", "50002")\
+        .config("spark.fileserver.port", "6002")\
+        .config("spark.broadcast.port", "60003")\
+        .config("spark.replClassServer.port", "60004")\
+        .config("spark.port.maxRetries", "1")\
+        .appName(pid)\
+        .getOrCreate()
     return spark
 
 
@@ -270,7 +302,7 @@ class PA2Data(object):
         self.deploy = deploy
 
     def load(self, name, path, infer_schema=False):
-        if name == 'product_ml':
+        if name in ['ml_features_train', 'ml_features_test']:
             data = self.spark.read.parquet(path)
         else:
             schema = self.schema[name] if not infer_schema else None
@@ -322,7 +354,7 @@ class PA2Data(object):
                 df = self.spark.createDataFrame([res])
             else:
                 df = self.spark.createDataFrame(res)
-            output_path = os.path.join(
+            output_path = 'file://' + os.path.join(
                 self.output_root, filename + EXT)
             df.coalesce(1).write.mode('overwrite').json(output_path)
         else:
