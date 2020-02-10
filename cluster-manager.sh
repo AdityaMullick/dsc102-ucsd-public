@@ -25,7 +25,7 @@ if [ "$#" -eq 1 ] && [ $1 == 'create' ]; then
 
 	MASTER_POD="$(kubectl get pods 2>&1 | awk '/spark-master/ {print $1}')"
 	
-	stdbuf -o0 kubectl port-forward --address 127.0.0.1 $MASTER_POD 0:8888 0:8080 0:4040 > $BASEDIR/port_forwarding  &
+	stdbuf -o0 kubectl port-forward --address 127.0.0.1 $MASTER_POD 0:8888 0:8080 0:4040 > $BASEDIR/port_forwarding  2>/dev/null &
 	#sleep 2
 	temp=$(cat $BASEDIR/port_forwarding | wc -l)
 	while [ $temp != 3 ]
@@ -76,7 +76,7 @@ elif [ $# -eq 1 ] && [ $1 == 'port-forward' ]; then
                 kill -9 $process
             fi
 	    
-            stdbuf -o0 kubectl port-forward --address 127.0.0.1 $MASTER_POD 0:8888 0:8080 0:4040 > $BASEDIR/port_forwarding  &
+            stdbuf -o0 kubectl port-forward --address 127.0.0.1 $MASTER_POD 0:8888 0:8080 0:4040 > $BASEDIR/port_forwarding 2> /dev/null &
             #sleep 2
             temp=$(cat $BASEDIR/port_forwarding | wc -l)
             while [ $temp != 3 ]
