@@ -114,10 +114,10 @@ spec:
             - containerPort: 60004
           resources:
             limits:
-              memory: "16Gi"
+              memory: "20Gi"
               cpu: 2
             requests:
-              memory: "16Gi"
+              memory: "20Gi"
               cpu: 2
           volumeMounts:
             - name: dsc102-pa2-datasets
