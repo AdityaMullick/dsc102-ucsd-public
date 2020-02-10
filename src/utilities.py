@@ -214,7 +214,7 @@ def spark_init(pid):
     spark = SparkSession.builder.master("spark://spark-master:7077")\
         .config("spark.dynamicAllocation.enabled", 'false')\
         .config("spark.sql.crossJoin.enabled", "true")\
-        .config("spark.memory.fraction", "0.99")\
+        .config("spark.memory.fraction", "0.90")\
         .config("spark.executor.memory", "20G")\
         .config("spark.driver.memory", "3G")\
         .config("spark.driver.extraLibraryPath", "/opt/hadoop/lib/native")\
@@ -266,12 +266,14 @@ class PA2Data(object):
                  spark,
                  path_dict,
                  output_root,
-                 deploy
+                 deploy,
+                 input_format='dataframe'
                  ):
         self.spark = spark
         self.path_dict = path_dict
         self.output_root = output_root
         self.deploy = deploy
+        self.input_format = input_format
 
     def load(self, name, path, infer_schema=False):
         if name in ['ml_features_train', 'ml_features_test']:
@@ -294,19 +296,13 @@ class PA2Data(object):
         return data
 
     def load_all(self, input_format='dataframe', no_cache=False):
+        self.input_format = input_format
         print ("Loading datasets ...", end='')  # noqa
         data_dict = {}
         count_dict = {}
         for name, path in self.path_dict.items():
 
             data = self.load(name, path)
-#             if name == 'product_processed':
-#                 data = data[['asin',
-#                              'unknownImputedTitle',
-#                              'unknownImputedCategory'
-#                              ]]. \
-#                     withColumnRenamed('unknownImputedTitle', 'title'). \
-#                     withColumnRenamed('unknownImputedCategory', 'category')
             if input_format == 'rdd':
                 data = data.rdd
             elif input_format == 'koalas':
@@ -320,20 +316,26 @@ class PA2Data(object):
 
     def cache_switch(self, data_dict, part):
         count_dict = {}
-        part_1_data = ['product', 'review', 'product_processed']
-        part_2_data = ['ml_features_train', 'ml_features_test']
-        if part == 'part_1':
-            data_dict, count_dict = self.switch(data_dict, part_1_data, part_2_data)
-        elif part == 'part_2':
-            data_dict, count_dict = self.switch(data_dict, part_2_data, part_1_data)
+        if self.input_format == 'koalas':
+            print('cache_switch() has no effect on Koalas')
         else:
-            raise ValueError
+            part_1_data = ['product', 'review', 'product_processed']
+            part_2_data = ['ml_features_train', 'ml_features_test']
+            if part == 'part_1':
+                data_dict, count_dict = self.switch(data_dict, part_1_data, part_2_data)
+            elif part == 'part_2':
+                data_dict, count_dict = self.switch(data_dict, part_2_data, part_1_data)
+            else:
+                raise ValueError
         return data_dict, count_dict
 
     def switch(self, data_dict, to_persist, to_unpersist):
         count_dict = {}
         for name in to_unpersist:
-            data_dict[name].unpersist()
+            try:
+                data_dict[name].unpersist()
+            except Exception as e:
+                pass
         for name in to_persist:
             data_dict[name] = data_dict[name].cache()
             count_dict[name] = data_dict[name].count()

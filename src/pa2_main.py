@@ -8,6 +8,7 @@ from utilities import PA2Test
 from utilities import PA2Data
 from utilities import TASK_NAMES
 from utilities import data_cat
+import databricks.koalas as ks
 
 class PA2Executor(object):
     def __init__(
@@ -20,6 +21,8 @@ class PA2Executor(object):
     ):
 
         self.spark = spark_init(args.pid)
+        if input_format == 'koalas':
+            ks.set_option('compute.default_index_type', 'distributed')
         path_dict = {
             'review': args.review_filename,
             'product': args.product_filename,
@@ -34,12 +37,15 @@ class PA2Executor(object):
             output_root = os.path.join(args.output_root, args.pid)
         else:
             output_root = args.output_root
-        self.data_io = PA2Data(self.spark, path_dict, output_root, deploy=True)
+        self.data_io = PA2Data(self.spark, path_dict, output_root, 
+                               deploy=True, input_format=input_format)
 
         self.data_dict, self.count_dict = self.data_io.load_all(
             input_format=input_format, no_cache=True)
         self.task_names = TASK_NAMES
         self.synonmys = synonmys
+        
+
 
     def arguments(self):
         arguments = {
