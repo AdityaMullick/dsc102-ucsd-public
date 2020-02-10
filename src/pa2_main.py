@@ -37,7 +37,7 @@ class PA2Executor(object):
         self.data_io = PA2Data(self.spark, path_dict, output_root, deploy=True)
 
         self.data_dict, self.count_dict = self.data_io.load_all(
-            input_format=input_format)
+            input_format=input_format, no_cache=True)
         self.task_names = TASK_NAMES
         self.synonmys = synonmys
 
@@ -69,22 +69,18 @@ class PA2Executor(object):
         return tasks
 
     def eval(self):
-        arguments, tasks = self.arguments(), self.tasks()
-        begin = time.time()
         results = []
         timings = []
-        for task_name in self.task_names:
-            task = tasks[task_name]
-            fargs = arguments[task_name]
-            sub_task_begin = time.time()
-            result = self.eval_one(task, fargs, task_name)
-            results.append(result)
-            sub_task_end = time.time()
-            sub_task_dur = sub_task_end - sub_task_begin
-            timings.append(sub_task_dur)
-            print ("{} time: {} sec".format(task_name, sub_task_dur))
+        begin = time.time()
+        for part in ['part_1', 'part_2']:
+            print ("Running {} ...".format(part))
+            self.data_dict, self.count_dict = self.data_io.cache_switch(self.data_dict, part)
+            results_part, timings_part = self.eval_by_part(part)
+            results += results_part
+            timings += timings_part            
         e2e_dur = time.time()-begin
-        print ("End to end time: {} sec".format(e2e_dur))
+        print ("End to end time (including data io): {} sec".format(e2e_dur))
+        print ("End to end time (excluding data io): {} sec".format(sum(timings)))
         timings.append(e2e_dur)
         return results, timings
 
@@ -101,10 +97,29 @@ class PA2Executor(object):
             traceback.print_exc()
         return result
 
-    def eval_by_name(self, task, task_name):
-        arguments = self.arguments()
+    def eval_by_part(self, part):
+        results = []
+        timings = []
+        if part == 'part_1':
+            task_names = self.task_names[:6]
+        elif part == 'part_2':
+            task_names = self.task_names[6:]
+        for task_name in task_names:
+            result, sub_task_dur = self.eval_by_name(task_name)
+            results.append(result)
+            timings.append(sub_task_dur)
+            print ("{} time: {} sec".format(task_name, sub_task_dur))
+        return results, timings
+        
+    def eval_by_name(self, task_name):
+        arguments, tasks = self.arguments(), self.tasks()
         fargs = arguments[task_name]
-        self.eval_one(task, fargs, task_name)
+        task = tasks[task_name]
+        sub_task_begin = time.time()
+        result = self.eval_one(task, fargs, task_name)
+        sub_task_end = time.time()
+        sub_task_dur = sub_task_end - sub_task_begin
+        return result, sub_task_dur
 
 def get_main_parser():
     parser = argparse.ArgumentParser()

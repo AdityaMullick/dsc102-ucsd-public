@@ -214,8 +214,8 @@ def spark_init(pid):
     spark = SparkSession.builder.master("spark://spark-master:7077")\
         .config("spark.dynamicAllocation.enabled", 'false')\
         .config("spark.sql.crossJoin.enabled", "true")\
-        .config("spark.memory.fraction", "0.9")\
-        .config("spark.executor.memory", "15G")\
+        .config("spark.memory.fraction", "0.99")\
+        .config("spark.executor.memory", "20G")\
         .config("spark.driver.memory", "3G")\
         .config("spark.driver.extraLibraryPath", "/opt/hadoop/lib/native")\
         .config("spark.driver.port", "20002")\
@@ -246,35 +246,7 @@ class PA2Data(object):
     product_processed_schema = T.StructType([
         T.StructField('asin', T.StringType()),
         T.StructField('title', T.StringType()),
-        T.StructField('price', T.FloatType()),
-        T.StructField('meanRating', T.FloatType()),
-        T.StructField('countRating', T.FloatType()),
-        T.StructField('category', T.StringType()),
-        T.StructField('bestSalesCategory', T.StringType()),
-        T.StructField('bestSalesRank', T.FloatType()),
-        T.StructField('countAlsoBought', T.FloatType()),
-        T.StructField('meanAlsoBought', T.FloatType()),
-        T.StructField('countAlsoViewed', T.FloatType()),
-        T.StructField('meanAlsoViewed', T.FloatType()),
-        T.StructField('countBoughtTogether', T.FloatType()),
-        T.StructField('meanBoughtTogether', T.FloatType()),
-        T.StructField('countBuyAfterViewing', T.FloatType()),
-        T.StructField('meanBuyAfterViewing', T.FloatType()),
-        T.StructField('meanImputedPrice', T.FloatType()),
-        T.StructField('meanImputedMeanRating', T.FloatType()),
-        T.StructField('meanImputedMeanAlsoBought', T.FloatType()),
-        T.StructField('meanImputedMeanAlsoViewed', T.FloatType()),
-        T.StructField('meanImputedMeanBoughtTogether', T.FloatType()),
-        T.StructField('meanImputedMeanBuyAfterViewing', T.FloatType()),
-        T.StructField('medianImputedBestSalesRank', T.FloatType()),
-        T.StructField('medianImputedCountRating', T.FloatType()),
-        T.StructField('medianImputedCountAlsoBought', T.FloatType()),
-        T.StructField('medianImputedCountAlsoViewed', T.FloatType()),
-        T.StructField('medianImputedCountBoughtTogether', T.FloatType()),
-        T.StructField('medianImputedCountBuyAfterViewing', T.FloatType()),
-        T.StructField('unknownImputedTitle', T.StringType()),
-        T.StructField('unknownImputedCategory', T.StringType()),
-        T.StructField('unknownImputedBestSalesCategory', T.StringType())
+        T.StructField('category', T.StringType())
     ])
     salesRank_schema = T.MapType(T.StringType(), T.IntegerType())
     categories_schema = T.ArrayType(T.ArrayType(T.StringType()))
@@ -328,13 +300,13 @@ class PA2Data(object):
         for name, path in self.path_dict.items():
 
             data = self.load(name, path)
-            if name == 'product_processed':
-                data = data[['asin',
-                             'unknownImputedTitle',
-                             'unknownImputedCategory'
-                             ]]. \
-                    withColumnRenamed('unknownImputedTitle', 'title'). \
-                    withColumnRenamed('unknownImputedCategory', 'category')
+#             if name == 'product_processed':
+#                 data = data[['asin',
+#                              'unknownImputedTitle',
+#                              'unknownImputedCategory'
+#                              ]]. \
+#                     withColumnRenamed('unknownImputedTitle', 'title'). \
+#                     withColumnRenamed('unknownImputedCategory', 'category')
             if input_format == 'rdd':
                 data = data.rdd
             elif input_format == 'koalas':
@@ -344,6 +316,27 @@ class PA2Data(object):
             data_dict[name] = data
             count_dict[name] = data.count() if not no_cache else None
         print ("Done")
+        return data_dict, count_dict
+
+    def cache_switch(self, data_dict, part):
+        count_dict = {}
+        part_1_data = ['product', 'review', 'product_processed']
+        part_2_data = ['ml_features_train', 'ml_features_test']
+        if part == 'part_1':
+            data_dict, count_dict = self.switch(data_dict, part_1_data, part_2_data)
+        elif part == 'part_2':
+            data_dict, count_dict = self.switch(data_dict, part_2_data, part_1_data)
+        else:
+            raise ValueError
+        return data_dict, count_dict
+
+    def switch(self, data_dict, to_persist, to_unpersist):
+        count_dict = {}
+        for name in to_unpersist:
+            data_dict[name].unpersist()
+        for name in to_persist:
+            data_dict[name] = data_dict[name].cache()
+            count_dict[name] = data_dict[name].count()
         return data_dict, count_dict
 
     def save(self, res, task_name, filename=None):

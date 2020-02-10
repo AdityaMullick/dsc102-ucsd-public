@@ -12,6 +12,8 @@ if INPUT_FORMAT == 'dataframe':
     import pyspark.ml as M
     import pyspark.sql.functions as F
     import pyspark.sql.types as T
+    from pyspark.ml.regression import DecisionTreeRegressor
+    from pyspark.ml.evaluation import RegressionEvaluator
 if INPUT_FORMAT == 'koalas':
     import databricks.koalas as ks
     ks.set_option('compute.default_index_type', 'distributed')
@@ -20,6 +22,10 @@ elif INPUT_FORMAT == 'rdd':
     from pyspark.mllib.feature import Word2Vec
     from pyspark.mllib.linalg import Vectors
     from pyspark.mllib.linalg.distributed import RowMatrix
+    from pyspark.mllib.tree import DecisionTree
+    from pyspark.mllib.regression import LabeledPoint
+    from pyspark.mllib.linalg import DenseVector
+    from pyspark.mllib.evaluation import RegressionMetrics 
 # ---------- Begin definition of helper functions, if you need any ------------
 
 # def task_1_helper():
