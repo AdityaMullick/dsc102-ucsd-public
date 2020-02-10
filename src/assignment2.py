@@ -16,7 +16,6 @@ if INPUT_FORMAT == 'dataframe':
     from pyspark.ml.evaluation import RegressionEvaluator
 if INPUT_FORMAT == 'koalas':
     import databricks.koalas as ks
-    ks.set_option('compute.default_index_type', 'distributed')
 elif INPUT_FORMAT == 'rdd':
     import pyspark.mllib as M
     from pyspark.mllib.feature import Word2Vec
