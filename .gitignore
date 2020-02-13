@@ -9,6 +9,7 @@ spark-cluster.yaml
 *.so
 local.sh
 credentials.list
+demo/
 # Distribution / packaging
 .Python
 build/
