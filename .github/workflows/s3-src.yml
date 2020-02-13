@@ -3,7 +3,7 @@ name: Upload S3 src
 on:
   push:
     branches:
-    - master
+    - emr
 
 jobs:
   deploy:
