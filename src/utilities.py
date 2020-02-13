@@ -215,7 +215,7 @@ def spark_init(pid):
         .config("spark.dynamicAllocation.enabled", 'false')\
         .config("spark.sql.crossJoin.enabled", "true")\
         .config("spark.memory.fraction", "0.90")\
-        .config("spark.executor.memory", "20G")\
+        .config("spark.executor.memory", "18G")\
         .config("spark.driver.memory", "3G")\
         .config("spark.driver.extraLibraryPath", "/opt/hadoop/lib/native")\
         .config("spark.driver.port", "20002")\
