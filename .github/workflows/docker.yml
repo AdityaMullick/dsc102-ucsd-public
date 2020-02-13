@@ -1,7 +1,10 @@
 name: Publish Docker
-on: 
-  branches:
+
+on:
+  push:
+    branches:
     - emr
+
 jobs:
   build:
     runs-on: ubuntu-latest
