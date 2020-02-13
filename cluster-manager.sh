@@ -6,6 +6,7 @@ if [ "$#" -eq 1 ] && [ $1 == 'create' ]; then
 	# Keeping this for 3. We cannot go beyond 3
 	NUM_WORKERS=3
 	cat $BASEDIR/spark-cluster.yaml.template | sed -e "s/\$JUPYTER_TOKEN/$JUPYTER_TOKEN/" -e "s/\$NUM_WORKERS/$NUM_WORKERS/"  > $BASEDIR/spark-cluster.yaml
+	echo $JUPYTER_TOKEN > $BASEDIR/jupyter_token
 	status=$(cat $BASEDIR/spark-cluster.yaml | kubectl create -f - 2>&1 | grep Error)
 	if [[ "$status" == *"Error"* ]]; then
 	    echo $status
